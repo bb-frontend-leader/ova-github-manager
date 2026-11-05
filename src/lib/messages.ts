@@ -64,6 +64,34 @@ const RULES: Rule[] = [
   [/^Developer name cannot exceed (\d+)/, (m) => `El nombre del desarrollador admite hasta ${m[1]} caracteres.`],
   [/^Developer already exists: (.+)/, (m) => `El desarrollador "${m[1]}" ya existe.`],
 
+  // Proyectos
+  [/^Project name cannot be empty/, () => 'Escribe el nombre del proyecto.'],
+  [/^Project name cannot exceed (\d+)/, (m) => `El nombre del proyecto admite hasta ${m[1]} caracteres.`],
+  [/^Organization cannot be empty/, () => 'Escribe la organización de GitHub.'],
+  [
+    /^Invalid GitHub organization: (.+)/,
+    (m) => `"${m[1]}" no es una organización de GitHub válida. Usa letras, números y guiones sueltos.`,
+  ],
+  [
+    /^Invalid project identifier: (.+)/,
+    (m) => `El identificador "${m[1]}" no es válido. Usa minúsculas, números y guiones.`,
+  ],
+  [/^Project identifier is reserved: (.+)/, (m) => `El identificador "${m[1]}" está reservado. Elige otro.`],
+  [/^Project total must be/, () => 'El objetivo de OVAs debe ser un número entero entre 1 y 100000.'],
+  [
+    /^(Template|Team|Description prefix) cannot (be empty|exceed)/,
+    (m) => `Revisa el campo "${m[1]}": no puede quedar vacío ni ser demasiado largo.`,
+  ],
+  [
+    /^Organization already registered: (.+)/,
+    (m) => `La organización "${m[1]}" ya es un proyecto de la herramienta.`,
+  ],
+  [
+    /^Project already exists: (.+)/,
+    (m) => `Ya existe un proyecto con el identificador "${m[1]}". Cambia el nombre o el identificador.`,
+  ],
+  [/^Project not found/, () => 'Ese proyecto ya no existe.'],
+
   // Usuarios
   [/^GitHub username cannot be empty/, () => 'Escribe el usuario de GitHub.'],
   [

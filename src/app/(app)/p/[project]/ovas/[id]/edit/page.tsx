@@ -7,24 +7,25 @@ import { PageHeader } from '@/components/page-header';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { requirePagePermission } from '@/lib/dal';
+import { requireProjectPermission } from '@/lib/dal';
 import { parseId } from '@/lib/ova-filter';
-import { getServices } from '@/lib/services';
 import { updateOvaAction } from './actions';
 
 export default async function EditOvaPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ project: string; id: string }>;
   searchParams: Promise<{ ok?: string; error?: string }>;
 }) {
-  await requirePagePermission('ova:edit');
+  const { project: slug, id: rawId } = await params;
+  const { project, services } = await requireProjectPermission(slug, 'ova:edit');
+  const base = `/p/${project.slug}`;
 
-  const id = parseId((await params).id);
+  const id = parseId(rawId);
   if (id === undefined) notFound();
 
-  const { store } = getServices();
+  const { store } = services;
   const [ova, schools, developers] = await Promise.all([
     store.findById(id),
     store.listSchools(),
@@ -37,7 +38,7 @@ export default async function EditOvaPage({
   return (
     <div className="flex flex-col gap-6">
       <Link
-        href="/#ovas"
+        href={`${base}#ovas`}
         className="inline-flex w-fit items-center gap-1.5 rounded-sm text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="size-4" aria-hidden /> Volver al panel
@@ -69,6 +70,7 @@ export default async function EditOvaPage({
       <Card className="max-w-2xl">
         <CardContent>
           <form action={updateOvaAction} className="flex flex-col gap-5">
+            <input type="hidden" name="project" value={project.slug} />
             <input type="hidden" name="id" value={ova.id} />
 
             <div className="flex flex-col gap-1.5">
@@ -99,7 +101,7 @@ export default async function EditOvaPage({
 
             <div className="flex flex-wrap gap-2">
               <Button type="submit">Guardar cambios</Button>
-              <Link href="/#ovas" className={buttonVariants({ variant: 'ghost' })}>
+              <Link href={`${base}#ovas`} className={buttonVariants({ variant: 'ghost' })}>
                 Cancelar
               </Link>
             </div>

@@ -1,16 +1,17 @@
 import { ManageCatalogUseCase } from '../../application/ManageCatalogUseCase';
 import type { RepositoryGateway } from '../../application/ports';
 import { UpdateOvaUseCase } from '../../application/UpdateOvaUseCase';
-import { SqliteOvaStore } from '../../infrastructure/sqlite';
+import type { SqliteProjectStore } from '../../infrastructure/sqlite';
+import { openProjectStore } from '../helpers';
 
 describe('UpdateOvaUseCase', () => {
-  let store: SqliteOvaStore;
+  let store: SqliteProjectStore;
   let gateway: jest.Mocked<RepositoryGateway>;
   let useCase: UpdateOvaUseCase;
   let ids: { ing: number; letras: number; juan: number; maria: number; ova: number };
 
   beforeEach(async () => {
-    store = new SqliteOvaStore(':memory:');
+    store = await openProjectStore();
     gateway = {
       createRepository: jest.fn(),
       assignTeam: jest.fn(),

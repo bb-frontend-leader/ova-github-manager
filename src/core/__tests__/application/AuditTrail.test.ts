@@ -4,16 +4,17 @@ import { ManageCatalogUseCase } from '../../application/ManageCatalogUseCase';
 import type { AuditLog } from '../../application/audit';
 import type { RepositoryGateway } from '../../application/ports';
 import { SyncOvasUseCase } from '../../application/SyncOvasUseCase';
-import { SqliteOvaStore } from '../../infrastructure/sqlite';
+import type { SqliteProjectStore } from '../../infrastructure/sqlite';
+import { openProjectStore } from '../helpers';
 
 describe('registro de actividad al crear y sincronizar', () => {
-  let store: SqliteOvaStore;
+  let store: SqliteProjectStore;
   let gateway: jest.Mocked<RepositoryGateway>;
   let schoolId: number;
   let developerId: number;
 
   beforeEach(async () => {
-    store = new SqliteOvaStore(':memory:');
+    store = await openProjectStore();
     gateway = {
       createRepository: jest.fn().mockImplementation(async ({ org, name }) => ({
         id: 1,

@@ -1,6 +1,5 @@
 import NextAuth from 'next-auth';
 import GitHub from 'next-auth/providers/github';
-import { getEnv } from '@/lib/env';
 import { getServices } from '@/lib/services';
 
 /**
@@ -46,12 +45,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       const login = typeof profile?.login === 'string' ? profile.login : undefined;
       if (!login || !account?.access_token) return false;
 
-      if (!(await isActiveOrgMember(account.access_token, getEnv().GITHUB_ORG))) {
+      // Se comprueba la membresía en la organización de CADA proyecto: entra quien pertenezca a
+      // al menos una (o sea super administrador). El rol dentro de cada una lo da el proyecto.
+      const token = account.access_token;
+      const result = await getServices().signIn.execute(login, (org) =>
+        isActiveOrgMember(token, org),
+      );
+      if (!result.superAdmin && result.projects.length === 0) {
         return '/login?error=NotOrgMember';
       }
-
-      // Crea al usuario con rol mínimo (o admin si está en INITIAL_ADMINS)
-      await getServices().signIn.execute(login);
       return true;
     },
     jwt({ token, profile }) {

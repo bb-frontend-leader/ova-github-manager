@@ -9,8 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { requirePagePermission } from '@/lib/dal';
-import { getServices } from '@/lib/services';
+import { requireProjectPermission } from '@/lib/dal';
 import { addDeveloperAction, addSchoolAction, addUserAction, changeRoleAction } from './actions';
 
 const ROLE_OPTIONS: Record<(typeof ROLES)[number], string> = {
@@ -30,15 +29,19 @@ function Count({ children }: { children: number }) {
 }
 
 export default async function AdminPage({
+  params,
   searchParams,
 }: {
+  params: Promise<{ project: string }>;
   searchParams: Promise<{ ok?: string; error?: string }>;
 }) {
-  const current = await requirePagePermission('users:manage');
-  await requirePagePermission('catalog:manage');
+  const { project: slug } = await params;
+  await requireProjectPermission(slug, 'catalog:manage');
+  const current = await requireProjectPermission(slug, 'users:manage');
+  const { project } = current;
 
   const { ok, error } = await searchParams;
-  const { store } = getServices();
+  const { store } = current.services;
   const [schools, developers, users] = await Promise.all([
     store.listSchools(),
     store.listDevelopers(),
@@ -67,6 +70,7 @@ export default async function AdminPage({
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <form action={addSchoolAction} className="flex items-end gap-2">
+              <input type="hidden" name="project" value={project.slug} />
               <div className="flex flex-1 flex-col gap-1.5">
                 <Label htmlFor="school-name">Nueva escuela</Label>
                 <Input id="school-name" name="name" required autoComplete="off" placeholder="Escuela de Ingeniería" />
@@ -113,6 +117,7 @@ export default async function AdminPage({
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <form action={addDeveloperAction} className="flex items-end gap-2">
+              <input type="hidden" name="project" value={project.slug} />
               <div className="flex flex-1 flex-col gap-1.5">
                 <Label htmlFor="developer-name">Nuevo desarrollador</Label>
                 <Input id="developer-name" name="name" required autoComplete="off" placeholder="Nombre y apellido" />
@@ -149,6 +154,7 @@ export default async function AdminPage({
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <form action={addUserAction} className="flex flex-wrap items-end gap-3">
+            <input type="hidden" name="project" value={project.slug} />
             <div className="flex min-w-48 flex-col gap-1.5">
               <Label htmlFor="user-login">Usuario de GitHub</Label>
               <Input id="user-login" name="login" placeholder="octocat" required autoComplete="off" />
@@ -192,6 +198,7 @@ export default async function AdminPage({
                     </TableCell>
                     <TableCell>
                       <form action={changeRoleAction} className="flex items-center gap-2">
+                        <input type="hidden" name="project" value={project.slug} />
                         <input type="hidden" name="login" value={user.login} />
                         <NativeSelect
                           name="role"

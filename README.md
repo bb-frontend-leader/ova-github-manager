@@ -38,32 +38,46 @@ npm run typecheck    # tipos (ejecuta antes un build o dev: Next genera tipos de
 npm run lint
 ```
 
+## Varios proyectos (organizaciones)
+
+La herramienta gestiona **varios proyectos de OVAs**; cada uno es una organización de GitHub con su propio catálogo (escuelas y desarrolladores), OVAs, usuarios y registro de actividad. Nada se mezcla entre proyectos.
+
+- Cada proyecto vive en `/p/<identificador>` (panel, crear OVA, actividad, administración, exportación, ajustes).
+- Los **super administradores** (`INITIAL_ADMINS`) crean proyectos desde **Nuevo proyecto** (nombre, organización, plantilla, team, prefijo de la descripción y objetivo de OVAs) y los editan en **Proyecto**. Al crearlo se comprueba con GitHub que el token ve la organización y se avisa si la plantilla no existe.
+- Se usa **un solo token** (`GITHUB_TOKEN`) que debe tener acceso a todas las organizaciones.
+- La organización y el identificador no cambian después de crear el proyecto.
+
 ## Puesta en marcha
 
 1. `npm install`
-2. Crea una **OAuth App en la organización** (no en tu cuenta personal), para que siga funcionando aunque tu cuenta cambie:
-   GitHub → la organización → *Settings* → *Developer settings* → *OAuth Apps* → *New OAuth App*.
+2. Crea una **OAuth App** para el login (mejor en una organización que en tu cuenta personal, para que siga funcionando aunque tu cuenta cambie):
+   GitHub → *Settings* → *Developer settings* → *OAuth Apps* → *New OAuth App*.
    - *Homepage URL*: la URL de la herramienta (p. ej. `http://localhost:3000`)
    - *Authorization callback URL*: `http://localhost:3000/api/auth/callback/github`
-   - Copia el *Client ID* y genera un *Client secret*.
-3. Copia `.env.example` a `.env.local` (en la raíz) y rellénalo (`GITHUB_ORG`, `GITHUB_TOKEN`, `AUTH_GITHUB_ID`, `AUTH_GITHUB_SECRET`, `AUTH_SECRET`, `INITIAL_ADMINS`).
+   - Copia el *Client ID* y genera un *Client secret*. Cada organización de un proyecto debe aprobar esta OAuth App para que se pueda comprobar quién es miembro.
+3. Copia `.env.example` a `.env.local` (en la raíz) y rellénalo (`GITHUB_TOKEN`, `AUTH_GITHUB_ID`, `AUTH_GITHUB_SECRET`, `AUTH_SECRET`, `INITIAL_ADMINS`).
 4. `npm run dev` y entra en `http://localhost:3000`.
-5. Como admin, en **Administración** da de alta las escuelas y los desarrolladores. Después ya se pueden crear OVAs.
+5. Como super administrador, crea el primer proyecto. Dentro de él, en **Administración**, da de alta las escuelas y los desarrolladores. Después ya se pueden crear OVAs.
+
+### Migrar desde la versión de un solo proyecto
+
+Si ya tenías una base de datos (`data/ova.db`) de la versión anterior, mantén `GITHUB_ORG`, `OVA_DESCRIPTION_PREFIX`, `OVA_DEFAULT_TEAM`, `OVA_TEMPLATE` y `OVA_TOTAL` en `.env.local` **solo para el primer arranque**: todo lo existente (escuelas, desarrolladores, OVAs, usuarios y actividad, con los mismos ids) pasa a ser el primer proyecto. Antes de migrar se guarda una copia en `data/ova.db.pre-projects.bak`, y la migración es una transacción: o se hace completa o no se cambia nada. Después esas variables ya no se usan.
 
 ## Acceso y roles
 
-Solo entran **miembros activos de la organización** (se comprueba con GitHub al iniciar sesión). Quien entra por primera vez queda como *Lector*; un admin le sube el rol.
+Entra quien sea **miembro activo de la organización de al menos un proyecto** (se comprueba con GitHub al iniciar sesión, para cada proyecto). Quien entra por primera vez a un proyecto queda como *Lector*; un admin de ese proyecto le sube el rol. **Los roles son por proyecto**: alguien puede ser Creador en uno y Lector en otro.
 
-| Rol | Puede |
+| Rol (en un proyecto) | Puede |
 |---|---|
 | Lector | Ver el panel y el listado |
-| Creador | Lo anterior + crear OVAs |
-| Admin | Lo anterior + gestionar escuelas, desarrolladores y usuarios |
+| Creador | Lo anterior + crear y editar OVAs |
+| Admin | Lo anterior + gestionar escuelas, desarrolladores y usuarios del proyecto |
+| Super administrador | Admin en todos los proyectos + crear y editar proyectos |
 
 - El rol se lee de la base de datos en **cada petición**: un cambio de rol surte efecto al instante.
-- Las sesiones duran 8 horas, así que quien salga de la organización pierde el acceso en horas.
-- **Recuperación:** los usuarios de `INITIAL_ADMINS` son siempre admin. Si se pierde el acceso, añade un usuario a esa variable y reinicia la herramienta.
-- No se puede quitar el rol al último admin.
+- Las sesiones duran 8 horas, y la membresía se vuelve a comprobar al iniciar sesión: quien salga de una organización pierde el acceso a ese proyecto en horas.
+- **Recuperación:** los usuarios de `INITIAL_ADMINS` son super administradores. Si se pierde el acceso, añade un usuario a esa variable y reinicia la herramienta.
+- No se puede quitar el rol al último admin de un proyecto.
 - Cada acción se autoriza en el servidor, junto a la acción; ocultar un botón no es la protección.
 
 ## Datos de cada OVA

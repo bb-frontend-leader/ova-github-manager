@@ -1,8 +1,7 @@
 'use server';
 
-import { authorizeAction } from '@/lib/dal';
+import { authorizeProjectAction } from '@/lib/dal';
 import { translateError } from '@/lib/messages';
-import { getServices } from '@/lib/services';
 
 export type CreateOvaState =
   | { status: 'idle' }
@@ -14,8 +13,9 @@ export async function createOvaAction(
   formData: FormData,
 ): Promise<CreateOvaState> {
   // Se autoriza aquí, junto a la acción: nunca se confía en que la página ya lo hizo
-  const authz = await authorizeAction('ova:create');
+  const authz = await authorizeProjectAction(String(formData.get('project') ?? ''), 'ova:create');
   if (!authz.ok) return { status: 'error', message: authz.message };
+  const { login, services } = authz.value;
 
   const rawName = String(formData.get('rawName') ?? '');
   const schoolId = Number(formData.get('schoolId'));
@@ -29,11 +29,11 @@ export async function createOvaAction(
   }
 
   try {
-    const result = await getServices().createOva.execute({
+    const result = await services.createOva.execute({
       rawName,
       schoolId,
       developerId,
-      createdBy: authz.user.login,
+      createdBy: login,
     });
 
     if (!result.success) return { status: 'error', message: translateError(result.message) };

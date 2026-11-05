@@ -5,7 +5,8 @@ import { DuplicateEntryError } from '../../application/errors';
 import { SyncOvasUseCase } from '../../application/SyncOvasUseCase';
 import type { RepositoryGateway } from '../../application/ports';
 import type { OvaRegistry } from '../../application/registry';
-import { SqliteOvaStore } from '../../infrastructure/sqlite';
+import type { SqliteProjectStore } from '../../infrastructure/sqlite';
+import { openProjectStore } from '../helpers';
 
 function makeGateway(): jest.Mocked<RepositoryGateway> {
   const gateway: jest.Mocked<RepositoryGateway> = {
@@ -29,7 +30,7 @@ function makeGateway(): jest.Mocked<RepositoryGateway> {
 }
 
 describe('CreateOvaUseCase', () => {
-  let store: SqliteOvaStore;
+  let store: SqliteProjectStore;
   let gateway: jest.Mocked<RepositoryGateway>;
   let useCase: CreateOvaUseCase;
   let schoolId: number;
@@ -48,7 +49,7 @@ describe('CreateOvaUseCase', () => {
     );
 
   beforeEach(async () => {
-    store = new SqliteOvaStore(':memory:');
+    store = await openProjectStore();
     gateway = makeGateway();
     const catalog = new ManageCatalogUseCase(store);
     schoolId = (await catalog.addSchool('Escuela de Ingeniería')).id;
@@ -272,11 +273,11 @@ describe('CreateOvaUseCase', () => {
 });
 
 describe('ManageCatalogUseCase', () => {
-  let store: SqliteOvaStore;
+  let store: SqliteProjectStore;
   let catalog: ManageCatalogUseCase;
 
-  beforeEach(() => {
-    store = new SqliteOvaStore(':memory:');
+  beforeEach(async () => {
+    store = await openProjectStore();
     catalog = new ManageCatalogUseCase(store);
   });
 

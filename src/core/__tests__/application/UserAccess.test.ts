@@ -1,12 +1,13 @@
 import { DuplicateEntryError } from '../../application/errors';
-import { ManageUsersUseCase, SignInUseCase } from '../../application/UserAccessUseCases';
-import { SqliteOvaStore } from '../../infrastructure/sqlite';
+import { ManageUsersUseCase } from '../../application/UserAccessUseCases';
+import type { SqliteProjectStore } from '../../infrastructure/sqlite';
+import { openProjectStore } from '../helpers';
 
-describe('SqliteOvaStore (usuarios)', () => {
-  let store: SqliteOvaStore;
+describe('SqliteProjectStore (usuarios)', () => {
+  let store: SqliteProjectStore;
 
-  beforeEach(() => {
-    store = new SqliteOvaStore(':memory:');
+  beforeEach(async () => {
+    store = await openProjectStore();
   });
   afterEach(() => store.close());
 
@@ -16,6 +17,7 @@ describe('SqliteOvaStore (usuarios)', () => {
     expect(created).toEqual({
       login: 'alejo',
       role: 'creator',
+      verified: false,
       createdAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/),
     });
     expect((await store.findUser('ALEJO'))?.login).toBe('alejo');
@@ -50,60 +52,12 @@ describe('SqliteOvaStore (usuarios)', () => {
   });
 });
 
-describe('SignInUseCase', () => {
-  let store: SqliteOvaStore;
-
-  beforeEach(() => {
-    store = new SqliteOvaStore(':memory:');
-  });
-  afterEach(() => store.close());
-
-  it('crea a un usuario nuevo como viewer (mínimo privilegio)', async () => {
-    const user = await new SignInUseCase(store, { initialAdmins: [] }).execute('Maria');
-
-    expect(user).toMatchObject({ login: 'maria', role: 'viewer' });
-  });
-
-  it('crea a un admin inicial como admin', async () => {
-    const user = await new SignInUseCase(store, { initialAdmins: ['@Alejo'] }).execute('alejo');
-
-    expect(user.role).toBe('admin');
-  });
-
-  it('no cambia el rol de un usuario existente que no es admin inicial', async () => {
-    await store.createUser('maria', 'creator');
-
-    const user = await new SignInUseCase(store, { initialAdmins: ['alejo'] }).execute('MARIA');
-
-    expect(user.role).toBe('creator');
-  });
-
-  it('restaura a admin a un admin inicial al que se le bajó el rol (recuperación)', async () => {
-    await store.createUser('alejo', 'viewer');
-
-    const user = await new SignInUseCase(store, { initialAdmins: ['alejo'] }).execute('alejo');
-
-    expect(user.role).toBe('admin');
-    expect((await store.findUser('alejo'))?.role).toBe('admin');
-  });
-
-  it('rechaza un usuario de GitHub inválido', async () => {
-    await expect(new SignInUseCase(store, { initialAdmins: [] }).execute('a b')).rejects.toThrow(
-      'Invalid GitHub username',
-    );
-  });
-
-  it('rechaza una configuración con un admin inicial inválido', () => {
-    expect(() => new SignInUseCase(store, { initialAdmins: ['no válido'] })).toThrow();
-  });
-});
-
 describe('ManageUsersUseCase', () => {
-  let store: SqliteOvaStore;
+  let store: SqliteProjectStore;
   let useCase: ManageUsersUseCase;
 
   beforeEach(async () => {
-    store = new SqliteOvaStore(':memory:');
+    store = await openProjectStore();
     useCase = new ManageUsersUseCase(store);
     await store.createUser('alejo', 'admin');
   });

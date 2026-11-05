@@ -31,12 +31,24 @@ export type {
   NewAuditEntry,
 } from './audit';
 export { ManageCatalogUseCase } from './ManageCatalogUseCase';
+export {
+  ManageProjectsUseCase,
+  type ProjectGateway,
+  type ProjectResult,
+} from './ManageProjectsUseCase';
+export type {
+  ProjectChanges,
+  ProjectRecord,
+  ProjectStore,
+  SignInRecorder,
+} from './projects';
 export { ovasToCsv, CSV_SEPARATOR } from './OvaExport';
 export { DuplicateEntryError } from './errors';
 export {
   SignInUseCase,
   ManageUsersUseCase,
   type SignInConfig,
+  type SignInResult,
 } from './UserAccessUseCases';
 export type { UserRecord, UserStore } from './users';
 export type {

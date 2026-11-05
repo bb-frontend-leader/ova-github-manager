@@ -11,9 +11,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { requirePagePermission } from '@/lib/dal';
+import { requireProjectPermission } from '@/lib/dal';
 import { absoluteFormat, currentTime, relativeDate } from '@/lib/format';
-import { getServices } from '@/lib/services';
 
 export const metadata = { title: 'Actividad' };
 
@@ -34,13 +33,13 @@ function parsePage(value: string | undefined): number {
   return Number.isInteger(page) && page > 0 ? page : 1;
 }
 
-function href(params: { q?: string; action?: string; page?: number }): string {
+function href(base: string, params: { q?: string; action?: string; page?: number }): string {
   const search = new URLSearchParams();
   if (params.q) search.set('q', params.q);
   if (params.action) search.set('action', params.action);
   if (params.page && params.page > 1) search.set('page', String(params.page));
   const query = search.toString();
-  return query ? `/activity?${query}` : '/activity';
+  return query ? `${base}/activity?${query}` : `${base}/activity`;
 }
 
 function Detail({ entry }: { entry: AuditEntry }) {
@@ -75,18 +74,22 @@ function Detail({ entry }: { entry: AuditEntry }) {
 }
 
 export default async function ActivityPage({
+  params: routeParams,
   searchParams,
 }: {
+  params: Promise<{ project: string }>;
   searchParams: Promise<{ q?: string; action?: string; page?: string }>;
 }) {
-  await requirePagePermission('ova:view');
+  const { project: slug } = await routeParams;
+  const { project, services } = await requireProjectPermission(slug, 'ova:view');
+  const base = `/p/${project.slug}`;
 
   const params = await searchParams;
   const q = (params.q ?? '').trim();
   const action = isAction(params.action) ? params.action : undefined;
   const requested = parsePage(params.page);
 
-  const { store } = getServices();
+  const { store } = services;
   let result = await store.listActivity({ action, search: q }, PAGE_SIZE, (requested - 1) * PAGE_SIZE);
   const pageCount = Math.max(1, Math.ceil(result.total / PAGE_SIZE));
   const page = Math.min(requested, pageCount);
@@ -106,7 +109,7 @@ export default async function ActivityPage({
 
       <Card>
         <CardContent className="flex flex-col gap-4">
-          <form method="get" action="/activity" className="grid gap-3 sm:grid-cols-[minmax(0,1.4fr)_1fr_auto]">
+          <form method="get" action={`${base}/activity`} className="grid gap-3 sm:grid-cols-[minmax(0,1.4fr)_1fr_auto]">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="q">Buscar</Label>
               <div className="relative">
@@ -133,7 +136,7 @@ export default async function ActivityPage({
                 Filtrar
               </Button>
               {hasFilter && (
-                <Link href="/activity" className={buttonVariants({ variant: 'ghost' })}>
+                <Link href={`${base}/activity`} className={buttonVariants({ variant: 'ghost' })}>
                   Limpiar
                 </Link>
               )}
@@ -147,7 +150,7 @@ export default async function ActivityPage({
                 title="Ningún movimiento coincide"
                 description="Prueba con otro nombre o quita algún filtro."
                 action={
-                  <Link href="/activity" className={buttonVariants({ variant: 'outline' })}>
+                  <Link href={`${base}/activity`} className={buttonVariants({ variant: 'outline' })}>
                     Quitar filtros
                   </Link>
                 }
@@ -218,7 +221,7 @@ export default async function ActivityPage({
                   </p>
                   <div className="flex gap-2">
                     {page > 1 ? (
-                      <Link href={href({ q, action, page: page - 1 })} className={buttonVariants({ variant: 'outline', size: 'sm' })}>
+                      <Link href={href(base, { q, action, page: page - 1 })} className={buttonVariants({ variant: 'outline', size: 'sm' })}>
                         <ChevronLeft aria-hidden /> Anterior
                       </Link>
                     ) : (
@@ -227,7 +230,7 @@ export default async function ActivityPage({
                       </span>
                     )}
                     {page < pageCount ? (
-                      <Link href={href({ q, action, page: page + 1 })} className={buttonVariants({ variant: 'outline', size: 'sm' })}>
+                      <Link href={href(base, { q, action, page: page + 1 })} className={buttonVariants({ variant: 'outline', size: 'sm' })}>
                         Siguiente <ChevronRight aria-hidden />
                       </Link>
                     ) : (

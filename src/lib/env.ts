@@ -2,10 +2,13 @@ import 'server-only';
 import { z } from 'zod';
 
 const EnvSchema = z.object({
-  GITHUB_ORG: z.string().min(1, 'GITHUB_ORG es obligatorio'),
-  // Fase actual: token personal. Se sustituirá por una GitHub App (ver README).
+  // Un solo token para todas las organizaciones. Fase actual: token personal; se sustituirá por
+  // una GitHub App (ver README).
   GITHUB_TOKEN: z.string().min(1, 'GITHUB_TOKEN es obligatorio'),
-  /** Usuarios de GitHub que siempre son admin (separados por comas). Arranque y recuperación. */
+  /**
+   * Super administradores (separados por comas): crean proyectos y son admin en todos.
+   * Arranque y recuperación de acceso.
+   */
   INITIAL_ADMINS: z
     .string()
     .min(1, 'INITIAL_ADMINS es obligatorio (al menos un usuario de GitHub)')
@@ -16,9 +19,14 @@ const EnvSchema = z.object({
         .filter(Boolean),
     ),
   DATABASE_PATH: z.string().min(1).default('./data/ova.db'),
+  /**
+   * Solo para migrar una base de la versión de un solo proyecto: si existe, esos valores pasan a
+   * ser el primer proyecto. Después los proyectos se gestionan desde la interfaz y estas variables
+   * ya no se usan.
+   */
+  GITHUB_ORG: z.string().min(1).optional(),
   OVA_DESCRIPTION_PREFIX: z.string().min(1).default('625 OVAs 2027'),
   OVA_DEFAULT_TEAM: z.string().min(1).default('Frontend'),
-  /** Repositorio plantilla de la organización desde el que se crea cada OVA */
   OVA_TEMPLATE: z.string().min(1).default('ova-template'),
   OVA_TOTAL: z.coerce.number().int().positive().default(625),
 });

@@ -1,25 +1,17 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { LogOut } from 'lucide-react';
-import { can } from '@/core';
 import { signOut } from '@/auth';
 import { BrandMark } from '@/components/brand';
 import { InitialsAvatar } from '@/components/initials-avatar';
-import { MainNav, type NavItem } from '@/components/main-nav';
+import { ProjectSwitcher } from '@/components/project-switcher';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { requirePagePermission } from '@/lib/dal';
-
-const ROLE_LABELS = { viewer: 'Lector', creator: 'Creador', admin: 'Admin' } as const;
+import { requireViewer } from '@/lib/dal';
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
-  const user = await requirePagePermission('ova:view');
-
-  const items: NavItem[] = [{ href: '/', label: 'Panel', icon: 'panel' }];
-  if (can(user.role, 'ova:create')) items.push({ href: '/ovas/new', label: 'Crear OVA', icon: 'crear' });
-  items.push({ href: '/activity', label: 'Actividad', icon: 'actividad' });
-  if (can(user.role, 'users:manage')) items.push({ href: '/admin', label: 'Administración', icon: 'admin' });
+  const viewer = await requireViewer();
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -35,18 +27,24 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
             <BrandMark />
             <span className="max-md:sr-only">OVA GitHub Manager</span>
           </Link>
-          <div className="ml-2 md:ml-6">
-            <MainNav items={items} />
-          </div>
+          {viewer.projects.length > 0 && (
+            <div className="ml-1 md:ml-4">
+              <ProjectSwitcher
+                projects={viewer.projects.map((p) => ({ slug: p.slug, name: p.name }))}
+              />
+            </div>
+          )}
           <div className="ml-auto flex items-center gap-1.5">
             <ThemeToggle />
             <div className="flex items-center gap-2 pl-1.5">
-              <InitialsAvatar name={user.login} />
+              <InitialsAvatar name={viewer.login} />
               <div className="hidden flex-col leading-tight sm:flex">
-                <span className="text-sm font-medium">@{user.login}</span>
-                <Badge variant="secondary" className="w-fit">
-                  {ROLE_LABELS[user.role]}
-                </Badge>
+                <span className="text-sm font-medium">@{viewer.login}</span>
+                {viewer.superAdmin && (
+                  <Badge variant="default" className="w-fit">
+                    Super admin
+                  </Badge>
+                )}
               </div>
             </div>
             <form
@@ -65,9 +63,6 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       <main id="contenido" tabIndex={-1} className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 outline-none">
         {children}
       </main>
-      <footer className="border-t py-4 text-center text-xs text-muted-foreground">
-        Proyecto 625-OVAS-2027
-      </footer>
     </div>
   );
 }

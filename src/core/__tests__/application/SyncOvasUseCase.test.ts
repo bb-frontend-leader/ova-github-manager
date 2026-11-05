@@ -1,7 +1,8 @@
 import { ManageCatalogUseCase } from '../../application/ManageCatalogUseCase';
 import type { RepositoryData, RepositoryGateway } from '../../application/ports';
 import { SyncOvasUseCase } from '../../application/SyncOvasUseCase';
-import { SqliteOvaStore } from '../../infrastructure/sqlite';
+import type { SqliteProjectStore } from '../../infrastructure/sqlite';
+import { openProjectStore } from '../helpers';
 
 const repo = (name: string): RepositoryData => ({
   id: 1,
@@ -13,7 +14,7 @@ const repo = (name: string): RepositoryData => ({
 });
 
 describe('SyncOvasUseCase', () => {
-  let store: SqliteOvaStore;
+  let store: SqliteProjectStore;
   let gateway: jest.Mocked<RepositoryGateway>;
   let sync: SyncOvasUseCase;
 
@@ -32,8 +33,8 @@ describe('SyncOvasUseCase', () => {
     }
   };
 
-  beforeEach(() => {
-    store = new SqliteOvaStore(':memory:');
+  beforeEach(async () => {
+    store = await openProjectStore();
     gateway = {
       createRepository: jest.fn(),
       assignTeam: jest.fn(),

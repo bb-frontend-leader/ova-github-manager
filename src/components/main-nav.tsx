@@ -1,26 +1,34 @@
 'use client';
 
-import { History, LayoutDashboard, CirclePlus, Settings2 } from 'lucide-react';
+import { History, LayoutDashboard, CirclePlus, Settings2, SlidersHorizontal } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
-const ICONS = { panel: LayoutDashboard, crear: CirclePlus, actividad: History, admin: Settings2 } as const;
+const ICONS = {
+  panel: LayoutDashboard,
+  crear: CirclePlus,
+  actividad: History,
+  admin: Settings2,
+  proyecto: SlidersHorizontal,
+} as const;
 
 export interface NavItem {
   href: string;
   label: string;
   icon: keyof typeof ICONS;
+  /** Solo está activo en esa ruta exacta (el panel del proyecto cuelga de todas las demás) */
+  exact?: boolean;
 }
 
-/** Navegación principal. Recibe solo los enlaces permitidos al rol (se decide en el servidor). */
+/** Navegación del proyecto. Recibe solo los enlaces permitidos al rol (se decide en el servidor). */
 export function MainNav({ items }: { items: NavItem[] }) {
   const pathname = usePathname();
 
   return (
-    <nav aria-label="Principal" className="flex items-center gap-1">
+    <nav aria-label="Proyecto" className="flex items-center gap-1 overflow-x-auto">
       {items.map((item) => {
-        const active = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
+        const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
         const Icon = ICONS[item.icon];
         return (
           <Link
@@ -28,7 +36,7 @@ export function MainNav({ items }: { items: NavItem[] }) {
             href={item.href}
             aria-current={active ? 'page' : undefined}
             className={cn(
-              'inline-flex h-9 items-center gap-2 rounded-lg px-3 text-sm font-medium transition-colors',
+              'inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3 text-sm font-medium transition-colors',
               active
                 ? 'bg-accent text-accent-foreground'
                 : 'text-muted-foreground hover:bg-muted hover:text-foreground',

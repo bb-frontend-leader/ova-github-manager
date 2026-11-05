@@ -1,11 +1,12 @@
 import { DuplicateEntryError } from '../../application/errors';
-import { SqliteOvaStore } from '../../infrastructure/sqlite';
+import type { SqliteProjectStore } from '../../infrastructure/sqlite';
+import { openProjectStore } from '../helpers';
 
 describe('SqliteOvaStore', () => {
-  let store: SqliteOvaStore;
+  let store: SqliteProjectStore;
 
-  beforeEach(() => {
-    store = new SqliteOvaStore(':memory:');
+  beforeEach(async () => {
+    store = await openProjectStore();
   });
 
   afterEach(() => {

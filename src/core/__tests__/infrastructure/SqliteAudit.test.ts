@@ -1,4 +1,5 @@
-import { SqliteOvaStore } from '../../infrastructure/sqlite';
+import type { SqliteProjectStore } from '../../infrastructure/sqlite';
+import { openProjectStore } from '../helpers';
 import type { NewAuditEntry } from '../../application/audit';
 
 const entry = (overrides: Partial<NewAuditEntry> = {}): NewAuditEntry => ({
@@ -11,10 +12,10 @@ const entry = (overrides: Partial<NewAuditEntry> = {}): NewAuditEntry => ({
 });
 
 describe('SqliteOvaStore · registro de actividad', () => {
-  let store: SqliteOvaStore;
+  let store: SqliteProjectStore;
 
-  beforeEach(() => {
-    store = new SqliteOvaStore(':memory:');
+  beforeEach(async () => {
+    store = await openProjectStore();
   });
 
   afterEach(() => store.close());
@@ -73,7 +74,7 @@ describe('SqliteOvaStore · registro de actividad', () => {
 
 describe('SqliteOvaStore · editar OVAs', () => {
   it('actualiza escuela y desarrollador, y devuelve null si la OVA no existe', async () => {
-    const store = new SqliteOvaStore(':memory:');
+    const store = await openProjectStore();
     const ing = await store.addSchool({ name: 'Ingeniería', slug: 'ingenieria' });
     const letras = await store.addSchool({ name: 'Letras', slug: 'letras' });
     const juan = await store.addDeveloper({ name: 'Juan' });

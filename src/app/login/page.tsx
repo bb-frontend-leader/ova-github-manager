@@ -4,12 +4,12 @@ import { Alert } from '@/components/alert';
 import { BrandMark } from '@/components/brand';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
-import { getCurrentUser } from '@/lib/dal';
+import { getViewer } from '@/lib/dal';
 
 const ERROR_MESSAGES: Record<string, { title: string; hint: string }> = {
   NotOrgMember: {
-    title: 'Tu cuenta no pertenece a la organización',
-    hint: 'Pide que te inviten a la organización en GitHub y vuelve a intentarlo.',
+    title: 'Tu cuenta no pertenece a ninguna organización de la herramienta',
+    hint: 'Pide que te inviten a la organización de tu proyecto en GitHub y vuelve a intentarlo.',
   },
   AccessDenied: {
     title: 'No pudimos verificar tu pertenencia a la organización',
@@ -31,7 +31,7 @@ export default async function LoginPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   // Se valida contra la base de datos (no solo la cookie) para evitar un bucle de redirecciones
-  if (await getCurrentUser()) redirect('/');
+  if (await getViewer()) redirect('/');
 
   const { error } = await searchParams;
   const message = error
@@ -56,14 +56,14 @@ export default async function LoginPage({
         </div>
         <div className="relative max-w-md">
           <p className="text-4xl font-semibold tracking-tight text-balance">
-            625 OVAs, un repositorio a la vez.
+            Tus OVAs, un repositorio a la vez.
           </p>
           <p className="mt-4 text-base text-primary-foreground/85">
             Crea cada repositorio desde la plantilla, asígnalo a su equipo y deja el registro al día
             sin salir de aquí.
           </p>
         </div>
-        <p className="relative text-sm text-primary-foreground/75">Proyecto 625-OVAS-2027</p>
+        <p className="relative text-sm text-primary-foreground/75">Varios proyectos, una sola herramienta</p>
       </aside>
 
       <main className="relative flex items-center justify-center px-4 py-10">
@@ -79,7 +79,7 @@ export default async function LoginPage({
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">Inicia sesión</h1>
             <p className="mt-1.5 text-sm text-muted-foreground">
-              Usa tu cuenta de GitHub. Solo pueden entrar los miembros de la organización.
+              Usa tu cuenta de GitHub. Entran los miembros de las organizaciones de los proyectos.
             </p>
           </div>
 

@@ -24,6 +24,8 @@ interface Developer {
   name: string;
 }
 interface Config {
+  /** Identificador del proyecto (va en la URL y en el formulario) */
+  project: string;
   org: string;
   template: string;
   team: string;
@@ -124,7 +126,7 @@ function OvaRound({
           <Button type="button" onClick={onAnother}>
             <Plus aria-hidden /> Crear otra OVA
           </Button>
-          <Link href="/#ovas" className={buttonVariants({ variant: 'outline' })}>
+          <Link href={`/p/${config.project}#ovas`} className={buttonVariants({ variant: 'outline' })}>
             Ver en el panel
           </Link>
         </div>
@@ -139,6 +141,7 @@ function OvaRound({
       <Card>
         <CardContent>
           <form action={formAction} className="flex flex-col gap-5">
+            <input type="hidden" name="project" value={config.project} />
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="rawName">Nombre de la OVA</Label>
               <Input

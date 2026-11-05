@@ -5,16 +5,15 @@ import { EmptyState } from '@/components/empty-state';
 import { PageHeader } from '@/components/page-header';
 import { buttonVariants } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { requirePagePermission } from '@/lib/dal';
-import { getEnv } from '@/lib/env';
-import { getServices } from '@/lib/services';
+import { requireProjectPermission } from '@/lib/dal';
 import { NewOvaForm } from './new-ova-form';
 
-export default async function NewOvaPage() {
-  const user = await requirePagePermission('ova:create');
-  const { store } = getServices();
+export default async function NewOvaPage({ params }: { params: Promise<{ project: string }> }) {
+  const { project: slug } = await params;
+  const { project, role, services } = await requireProjectPermission(slug, 'ova:create');
+  const { store } = services;
+  const base = `/p/${project.slug}`;
   const [schools, developers] = await Promise.all([store.listSchools(), store.listDevelopers()]);
-  const env = getEnv();
 
   const missing =
     schools.length === 0 && developers.length === 0
@@ -24,7 +23,7 @@ export default async function NewOvaPage() {
         : developers.length === 0
           ? 'desarrolladores'
           : null;
-  const isAdmin = can(user.role, 'catalog:manage');
+  const isAdmin = can(role, 'catalog:manage');
 
   return (
     <div className="flex flex-col gap-6">
@@ -45,7 +44,7 @@ export default async function NewOvaPage() {
             }
             action={
               isAdmin && (
-                <Link href="/admin" className={buttonVariants()}>
+                <Link href={`${base}/admin`} className={buttonVariants()}>
                   Ir a Administración
                 </Link>
               )
@@ -57,10 +56,11 @@ export default async function NewOvaPage() {
           schools={schools.map((s) => ({ id: s.id, name: s.name, slug: s.slug }))}
           developers={developers.map((d) => ({ id: d.id, name: d.name }))}
           config={{
-            org: env.GITHUB_ORG,
-            template: env.OVA_TEMPLATE,
-            team: env.OVA_DEFAULT_TEAM,
-            prefix: env.OVA_DESCRIPTION_PREFIX,
+            project: project.slug,
+            org: project.org,
+            template: project.template,
+            team: project.defaultTeam,
+            prefix: project.descriptionPrefix,
           }}
         />
       )}
