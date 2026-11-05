@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+next-env.d.ts
+
+# Build / tests
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Environment (nunca subir secretos); la plantilla sí se versiona
+.env*
+!.env.example
+*.pem
+
+# Base de datos local (contiene el registro de OVAs y los usuarios)
+/data/
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+*.sqlite
+*.sqlite-journal
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Vercel
+.vercel

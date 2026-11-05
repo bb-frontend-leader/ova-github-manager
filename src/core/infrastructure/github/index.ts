@@ -1,0 +1,1 @@
+export { OctokitRepositoryGateway } from './gateway';
