@@ -4,9 +4,9 @@
   "private": true,
   "description": "Gestor web para crear y registrar repositorios OVA en una organización de GitHub",
   "scripts": {
-    "dev": "next dev",
+    "dev": "node scripts/next.cjs dev",
     "build": "next build",
-    "start": "next start",
+    "start": "node scripts/next.cjs start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "jest",

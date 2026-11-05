@@ -26,6 +26,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { autoSyncIfDue, lastSyncAt } from '@/lib/auto-sync';
+import { withBasePath } from '@/lib/base-path';
 import { requireProjectPermission } from '@/lib/dal';
 import { absoluteFormat, currentTime, relativeDate } from '@/lib/format';
 import { filterOvas, parseOvaQuery } from '@/lib/ova-filter';
@@ -270,7 +271,7 @@ export default async function DashboardPage({
         <CardContent className="flex flex-col gap-4">
           <form
             method="get"
-            action={base}
+            action={withBasePath(base)}
             className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.4fr)_1fr_1fr_auto]"
           >
             <div className="flex flex-col gap-1.5">
@@ -330,7 +331,7 @@ export default async function DashboardPage({
                 {hasFilter ? 'La exportación respeta los filtros aplicados.' : 'Descarga todas las OVAs con el enlace de cada repositorio.'}
               </p>
               {/* Es una descarga, no una página: <a> normal, sin enrutador de Next */}
-              <a href={exportHref} download className={buttonVariants({ variant: 'outline', size: 'sm' })}>
+              <a href={withBasePath(exportHref)} download className={buttonVariants({ variant: 'outline', size: 'sm' })}>
                 <Download aria-hidden /> Exportar CSV ({filtered.length})
               </a>
             </div>

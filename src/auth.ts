@@ -1,5 +1,6 @@
 import NextAuth from 'next-auth';
 import GitHub from 'next-auth/providers/github';
+import { withBasePath } from '@/lib/base-path';
 import { getServices } from '@/lib/services';
 
 /**
@@ -28,6 +29,7 @@ async function isActiveOrgMember(accessToken: string, org: string): Promise<bool
   return membership.state === 'active';
 }
 
+// Auth.js construye sus propias URL: necesita el prefijo completo con el que se sirve la app
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     GitHub({
@@ -39,7 +41,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     // Sesión corta: si alguien sale de la organización, pierde el acceso en horas, no en semanas.
     maxAge: 8 * 60 * 60,
   },
-  pages: { signIn: '/login', error: '/login' },
+  basePath: withBasePath('/api/auth'),
+  pages: { signIn: withBasePath('/login'), error: withBasePath('/login') },
   callbacks: {
     async signIn({ account, profile }) {
       const login = typeof profile?.login === 'string' ? profile.login : undefined;
@@ -52,7 +55,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         isActiveOrgMember(token, org),
       );
       if (!result.superAdmin && result.projects.length === 0) {
-        return '/login?error=NotOrgMember';
+        return withBasePath('/login?error=NotOrgMember');
       }
       return true;
     },

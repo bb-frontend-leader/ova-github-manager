@@ -56,8 +56,17 @@ La herramienta gestiona **varios proyectos de OVAs**; cada uno es una organizaci
    - *Authorization callback URL*: `http://localhost:3000/api/auth/callback/github`
    - Copia el *Client ID* y genera un *Client secret*. Cada organización de un proyecto debe aprobar esta OAuth App para que se pueda comprobar quién es miembro.
 3. Copia `.env.example` a `.env.local` (en la raíz) y rellénalo (`GITHUB_TOKEN`, `AUTH_GITHUB_ID`, `AUTH_GITHUB_SECRET`, `AUTH_SECRET`, `INITIAL_ADMINS`).
-4. `npm run dev` y entra en `http://localhost:3000`.
+4. `npm run dev` y entra en `http://localhost:3000`. El puerto se cambia con `PORT` en `.env.local` (también vale para `npm start`); un `-p` en la línea de comandos tiene prioridad: `npm run dev -- -p 4000`.
 5. Como super administrador, crea el primer proyecto. Dentro de él, en **Administración**, da de alta las escuelas y los desarrolladores. Después ya se pueden crear OVAs.
+
+### Servirla bajo una ruta (BASE_PATH)
+
+Si la herramienta no vive en la raíz del dominio (p. ej. `https://www.tu-dominio.com/ova-github-manager/app`), define `BASE_PATH=/ova-github-manager/app` en `.env.local` y **vuelve a compilar** (`npm run build`). Next lo aplica como `basePath` y `assetPrefix` y lo lee al compilar **y** al arrancar, por eso va en `.env.local` (o en el entorno de ambos comandos). Además:
+
+- La *Authorization callback URL* de la OAuth App pasa a ser `https://www.tu-dominio.com/ova-github-manager/app/api/auth/callback/github`.
+- Si defines `AUTH_URL`, pon solo el dominio (`https://www.tu-dominio.com`); la ruta sale de `BASE_PATH`.
+- El proxy del servidor debe reenviar esa ruta tal cual (sin quitar el prefijo) a la aplicación.
+- En el código, usa `withBasePath()` (`src/lib/base-path.ts`) para `<a>` y `<form action>` con rutas absolutas; `<Link>`, el router y `redirect()` ya lo añaden solos.
 
 ### Migrar desde la versión de un solo proyecto
 

@@ -17,6 +17,8 @@ const eslintConfig = defineConfig([
     // Skills de agentes (plantillas de terceros, no son código del proyecto)
     ".agents/**",
     ".claude/**",
+    // Scripts de Node (CommonJS) que lanzan la aplicación, no código de la app
+    "scripts/**",
   ]),
 ]);
 

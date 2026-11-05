@@ -8,6 +8,7 @@ import { ProjectSwitcher } from '@/components/project-switcher';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { withBasePath } from '@/lib/base-path';
 import { requireViewer } from '@/lib/dal';
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
@@ -50,7 +51,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
             <form
               action={async () => {
                 'use server';
-                await signOut({ redirectTo: '/login' });
+                await signOut({ redirectTo: withBasePath('/login') });
               }}
             >
               <Button type="submit" variant="ghost" size="icon" aria-label="Cerrar sesión" title="Cerrar sesión">

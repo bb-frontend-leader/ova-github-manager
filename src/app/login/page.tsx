@@ -4,6 +4,7 @@ import { Alert } from '@/components/alert';
 import { BrandMark } from '@/components/brand';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
+import { withBasePath } from '@/lib/base-path';
 import { getViewer } from '@/lib/dal';
 
 const ERROR_MESSAGES: Record<string, { title: string; hint: string }> = {
@@ -92,7 +93,7 @@ export default async function LoginPage({
           <form
             action={async () => {
               'use server';
-              await signIn('github', { redirectTo: '/' });
+              await signIn('github', { redirectTo: withBasePath('/') });
             }}
           >
             <Button type="submit" size="lg" className="w-full">
