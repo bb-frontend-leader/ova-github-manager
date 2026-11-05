@@ -49,16 +49,27 @@ export class OctokitRepositoryGateway implements RepositoryGateway {
           template.includes('/') ? template : `${org}/${template}`
         ).split('/');
 
-        const { data } = await this.octokit.rest.repos.createUsingTemplate({
-          template_owner: templateOwner,
-          template_repo: templateRepo,
-          owner: org,
-          name,
-          description: description || '',
-          private: isPrivate,
-          include_all_branches: false,
-        });
-        return this.mapRepositoryData(data);
+        try {
+          const { data } = await this.octokit.rest.repos.createUsingTemplate({
+            template_owner: templateOwner,
+            template_repo: templateRepo,
+            owner: org,
+            name,
+            description: description || '',
+            private: isPrivate,
+            include_all_branches: false,
+          });
+          return this.mapRepositoryData(data);
+        } catch (error) {
+          // Con plantillas grandes GitHub puede responder 5xx (timeout) aunque SÍ crea el repo.
+          // Antes de darlo por fallido se espera a que aparezca.
+          const status = (error as { status?: number } | null)?.status;
+          if (typeof status === 'number' && status >= 500) {
+            const created = await this.waitForRepository(org, name);
+            if (created) return created;
+          }
+          throw error;
+        }
       }
 
       const { data } = await this.octokit.rest.repos.createInOrg({
@@ -144,6 +155,25 @@ export class OctokitRepositoryGateway implements RepositoryGateway {
     } catch {
       throw new Error(`Failed to list repositories for ${org}`);
     }
+  }
+
+  /** Espera (hasta ~45 s) a que un repositorio exista; devuelve null si no aparece. */
+  private async waitForRepository(
+    org: string,
+    repo: string,
+    attempts = 15,
+    delayMs = 3000,
+  ): Promise<RepositoryData | null> {
+    for (let attempt = 0; attempt < attempts; attempt++) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+      try {
+        const { data } = await this.octokit.rest.repos.get({ owner: org, repo });
+        return this.mapRepositoryData(data);
+      } catch {
+        // Aún no existe (404) o falló la consulta: se reintenta
+      }
+    }
+    return null;
   }
 
   private mapRepositoryData(data: {
