@@ -46,7 +46,7 @@ const globalForServices = globalThis as unknown as {
 };
 
 /** Súbelo cada vez que cambie la forma de `Services`, para invalidar la caché de desarrollo. */
-const SERVICES_VERSION = 4;
+const SERVICES_VERSION = 5;
 
 export function getServices(): Services {
   const cached = globalForServices.__ovaServices;
@@ -105,7 +105,7 @@ export function getProjectServices(project: ProjectRecord): ProjectServices {
   const createRepository = new CreateRepositoryUseCase(gateway, {
     org: project.org,
     descriptionPrefix: project.descriptionPrefix,
-    defaultTeam: { slug: project.defaultTeam, permission: 'pull' },
+    defaultTeam: { slug: project.defaultTeam, permission: 'push' }, // "write" en la interfaz de GitHub
   });
 
   // El almacén del proyecto hace de registro, catálogo, usuarios y registro de actividad

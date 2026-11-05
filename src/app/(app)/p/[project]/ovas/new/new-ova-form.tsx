@@ -258,7 +258,7 @@ function OvaRound({
             <PreviewRow label="Plantilla">{config.template}</PreviewRow>
             <PreviewRow label="Equipo">
               {config.team}
-              <span className="mt-0.5 block text-xs text-muted-foreground">Permiso de lectura</span>
+              <span className="mt-0.5 block text-xs text-muted-foreground">Permiso de escritura</span>
             </PreviewRow>
             <PreviewRow label="Descripción">
               {name.state === 'valid' ? (

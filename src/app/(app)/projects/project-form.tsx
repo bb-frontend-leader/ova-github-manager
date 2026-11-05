@@ -142,7 +142,7 @@ export function ProjectForm({
           <Input id="template" name="template" required autoComplete="off" defaultValue={values.template} />
         </Field>
 
-        <Field id="defaultTeam" label="Team con acceso de lectura" hint="Recibe permiso de lectura en cada repositorio nuevo.">
+        <Field id="defaultTeam" label="Team con acceso de escritura" hint="Recibe permiso de escritura (Write) en cada repositorio nuevo.">
           <Input id="defaultTeam" name="defaultTeam" required autoComplete="off" defaultValue={values.defaultTeam} />
         </Field>
 

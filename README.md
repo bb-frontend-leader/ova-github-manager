@@ -102,7 +102,7 @@ Al llegar una OVA se conocen solo tres datos:
 Todo repo nuevo recibe además:
 
 - **Descripción:** `625 OVAs 2027 - {repo} {emoji aleatorio}`, p. ej. `625 OVAs 2027 - GR-2-88-2027-1 🚀`. El prefijo es configurable.
-- **Team `Frontend` con permiso `pull`:** agrupa a todos los desarrolladores de la organización, así que el mismo team se asigna a cada OVA.
+- **Team `Frontend` con permiso `push` (Write en GitHub):** agrupa a todos los desarrolladores de la organización, así que el mismo team se asigna a cada OVA.
 - **Contenido inicial copiado del repositorio plantilla `ova-template`** de la organización (configurable con `OVA_TEMPLATE`). Debe estar marcado como *Template repository* en GitHub.
 - **Repositorio privado.**
 
@@ -118,7 +118,7 @@ Todo repo nuevo recibe además:
 
 - [x] `src/core` con dominio y caso de uso Crear repositorio (con `warnings`)
 - [x] Next.js y shadcn/ui en la raíz, conectados al core
-- [x] Descripción con prefijo configurable y team por defecto (`Frontend`, `pull`) en el caso de uso
+- [x] Descripción con prefijo configurable y team por defecto (`Frontend`, `push`) en el caso de uso
 - [ ] Configuración en la app: prefijo `625 OVAs 2027`, team `Frontend` y template
 - [x] SQLite en el core: registro de OVAs, catálogo de escuelas/desarrolladores, detección de duplicados, estadísticas por escuela y desarrollador (`SqliteOvaStore`, `CreateOvaUseCase`, `ManageCatalogUseCase`)
 - [x] Registro conectado a la web (SQLite, servicios en el servidor)
@@ -132,7 +132,7 @@ Todo repo nuevo recibe además:
 ## Decisiones cerradas
 
 - Descripción: prefijo fijo `625 OVAs 2027` + emoji aleatorio.
-- Team: uno solo (`Frontend`, `pull`) para todas las OVAs; no hay un team por desarrollador.
+- Team: uno solo (`Frontend`, `push`) para todas las OVAs; no hay un team por desarrollador.
 - Cada OVA tiene **un** desarrollador y **una** escuela.
 
 - El permiso de escritura de cada desarrollador se gestiona **fuera** de la herramienta. Aquí el desarrollador es solo un dato del registro (quién lleva cada OVA); la herramienta no le da permisos en GitHub.
