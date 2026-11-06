@@ -1,4 +1,11 @@
+import type { OvaStatus } from '../domain/OvaStatus';
 import type { OvaRecord } from './registry';
+
+const STATUS_LABELS: Record<OvaStatus, string> = {
+  development: 'En desarrollo',
+  review: 'En revisión',
+  delivered: 'Entregada',
+};
 
 /**
  * Separador de columnas. El punto y coma es el que Excel espera por defecto con la
@@ -12,6 +19,7 @@ const HEADERS = [
   'Escuela',
   'Topic',
   'Desarrollador',
+  'Estado',
   'Creada por',
   'Fecha de creación (UTC)',
 ] as const;
@@ -31,6 +39,7 @@ export function ovasToCsv(ovas: readonly OvaRecord[]): string {
     ova.school.name,
     ova.school.slug,
     ova.developer.name,
+    STATUS_LABELS[ova.status],
     ova.createdBy,
     ova.createdAt,
   ]);

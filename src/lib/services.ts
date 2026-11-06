@@ -2,13 +2,16 @@ import 'server-only';
 import { mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import {
+  ChangeOvaStatusUseCase,
   CreateOvaUseCase,
   CreateRepositoryUseCase,
   ManageCatalogUseCase,
   ManageProjectsUseCase,
   ManageUsersUseCase,
   OctokitRepositoryGateway,
+  OvaHealthUseCase,
   Project,
+  ReconcileOvasUseCase,
   SignInUseCase,
   SqliteOvaStore,
   SyncOvasUseCase,
@@ -18,6 +21,7 @@ import {
   type SqliteProjectStore,
 } from '@/core';
 import { getEnv } from './env';
+import { cachedInspector } from './health';
 
 /** Servicios de toda la herramienta: proyectos y acceso. */
 export interface Services {
@@ -36,6 +40,9 @@ export interface ProjectServices {
   createOva: CreateOvaUseCase;
   syncOvas: SyncOvasUseCase;
   updateOva: UpdateOvaUseCase;
+  changeStatus: ChangeOvaStatusUseCase;
+  reconcile: ReconcileOvasUseCase;
+  health: OvaHealthUseCase;
 }
 
 // En desarrollo, el hot reload recarga los módulos: se guarda en globalThis para no
@@ -46,7 +53,7 @@ const globalForServices = globalThis as unknown as {
 };
 
 /** Súbelo cada vez que cambie la forma de `Services`, para invalidar la caché de desarrollo. */
-const SERVICES_VERSION = 5;
+const SERVICES_VERSION = 6;
 
 export function getServices(): Services {
   const cached = globalForServices.__ovaServices;
@@ -102,10 +109,13 @@ export function getProjectServices(project: ProjectRecord): ProjectServices {
   const { store: root, gateway } = getServices();
   const store = root.forProject(project.id);
 
+  // Permiso con el que se asigna el team a cada OVA ("write" en la interfaz de GitHub)
+  const team = { slug: project.defaultTeam, permission: 'push' } as const;
+
   const createRepository = new CreateRepositoryUseCase(gateway, {
     org: project.org,
     descriptionPrefix: project.descriptionPrefix,
-    defaultTeam: { slug: project.defaultTeam, permission: 'push' }, // "write" en la interfaz de GitHub
+    defaultTeam: team,
   });
 
   // El almacén del proyecto hace de registro, catálogo, usuarios y registro de actividad
@@ -116,6 +126,15 @@ export function getProjectServices(project: ProjectRecord): ProjectServices {
     store,
     syncOvas,
     updateOva: new UpdateOvaUseCase(gateway, store, store, { org: project.org }, store),
+    changeStatus: new ChangeOvaStatusUseCase(store, store),
+    reconcile: new ReconcileOvasUseCase(
+      gateway,
+      store,
+      store,
+      { org: project.org, template: project.template, team },
+      store,
+    ),
+    health: new OvaHealthUseCase(cachedInspector(gateway), store, { org: project.org }),
     manageUsers: new ManageUsersUseCase(store),
     manageCatalog: new ManageCatalogUseCase(store),
     createOva: new CreateOvaUseCase(

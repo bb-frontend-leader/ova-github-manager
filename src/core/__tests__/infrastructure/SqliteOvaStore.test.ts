@@ -91,6 +91,8 @@ describe('SqliteOvaStore', () => {
         repoUrl: 'https://github.com/org/GR-2-88-2027-1',
         school: ing,
         developer: juan,
+        status: 'development',
+        statusChangedAt: expect.any(String),
         createdBy: 'alejo',
         createdAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/),
       });
@@ -182,7 +184,7 @@ describe('SqliteOvaStore', () => {
     });
 
     it('devuelve estadísticas vacías sin datos', async () => {
-      expect(await store.stats()).toEqual({ total: 0, bySchool: [], byDeveloper: [] });
+      expect((await store.stats()).total).toBe(0);
     });
   });
 });

@@ -47,6 +47,14 @@ const RULES: Rule[] = [
     () => 'No se pudo consultar GitHub. Inténtalo de nuevo en unos minutos.',
   ],
 
+  [
+    /Failed to read repository health|Failed to list repositories of team/,
+    () => 'No se pudo consultar la actividad de los repositorios en GitHub. Inténtalo de nuevo en unos minutos.',
+  ],
+  [/The template repository cannot be registered/, () => 'Ese repositorio es la plantilla de OVAs, no se puede registrar como una OVA.'],
+  [/^Repository not found/, () => 'Ese repositorio no existe en GitHub. Puede que lo hayan borrado o renombrado.'],
+  [/^Invalid OVA status/, () => 'Elige un estado de la lista.'],
+  [/^GitHub user already linked: (.+)/, (m) => `@${m[1]} ya está vinculado a otro desarrollador de este proyecto.`],
   [/^OVA not found/, () => 'Esa OVA ya no existe en el registro. Vuelve al panel y actualiza la lista.'],
   [
     /Failed to (set|read) topics/,

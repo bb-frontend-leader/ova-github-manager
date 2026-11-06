@@ -1,6 +1,8 @@
 import { Octokit } from '@octokit/rest';
 import type {
   RepositoryGateway,
+  RepositoryHealth,
+  RepositoryInspector,
   RepositoryData,
   CreateRepositoryOptions,
   TeamPermissionLevel,
@@ -14,7 +16,63 @@ function errorMessage(error: unknown): string {
  * Adaptador de GitHub (Octokit). No contiene reglas de negocio:
  * solo traduce las llamadas del puerto a la API de GitHub.
  */
-export class OctokitRepositoryGateway implements RepositoryGateway {
+/** Consulta en bloque (GraphQL): 100 repositorios por llamada, con PRs abiertos y estado del CI. */
+const HEALTH_QUERY = `
+  query ($org: String!, $cursor: String) {
+    organization(login: $org) {
+      repositories(first: 100, after: $cursor, orderBy: { field: NAME, direction: ASC }) {
+        pageInfo { hasNextPage endCursor }
+        nodes {
+          name
+          isArchived
+          pushedAt
+          pullRequests(states: OPEN) { totalCount }
+          defaultBranchRef {
+            target { ... on Commit { statusCheckRollup { state } } }
+          }
+        }
+      }
+    }
+  }
+`;
+
+interface HealthResponse {
+  organization: {
+    repositories: {
+      pageInfo: { hasNextPage: boolean; endCursor: string | null };
+      nodes: ({
+        name: string;
+        isArchived: boolean;
+        pushedAt: string | null;
+        pullRequests: { totalCount: number };
+        defaultBranchRef: { target: { statusCheckRollup?: { state: string } | null } | null } | null;
+      } | null)[];
+    };
+  } | null;
+}
+
+/** Tope de páginas (100 repos cada una) para no recorrer organizaciones desmesuradas. */
+const MAX_HEALTH_PAGES = 50;
+
+function ciState(state: string | undefined): RepositoryHealth['ci'] {
+  if (state === 'SUCCESS') return 'success';
+  if (state === 'FAILURE' || state === 'ERROR') return 'failure';
+  if (state === 'PENDING' || state === 'EXPECTED') return 'pending';
+  return 'none';
+}
+
+/** Nivel de acceso a partir de los permisos que informa GitHub (maintain cuenta como push). */
+function permissionLevel(permissions?: {
+  admin?: boolean;
+  maintain?: boolean;
+  push?: boolean;
+}): TeamPermissionLevel {
+  if (permissions?.admin) return 'admin';
+  if (permissions?.maintain || permissions?.push) return 'push';
+  return 'pull';
+}
+
+export class OctokitRepositoryGateway implements RepositoryGateway, RepositoryInspector {
   private readonly octokit: Octokit;
 
   constructor(token: string) {
@@ -176,6 +234,73 @@ export class OctokitRepositoryGateway implements RepositoryGateway {
     return null;
   }
 
+  async listTeamRepositories(
+    org: string,
+    teamSlug: string,
+  ): Promise<{ name: string; permission: TeamPermissionLevel }[]> {
+    try {
+      const repos = await this.octokit.paginate(this.octokit.rest.teams.listReposInOrg, {
+        org,
+        team_slug: teamSlug.toLowerCase(),
+        per_page: 100,
+      });
+      return repos.map((repo) => ({ name: repo.name, permission: permissionLevel(repo.permissions) }));
+    } catch (error) {
+      throw new Error(`Failed to list repositories of team "${teamSlug}": ${errorMessage(error)}`);
+    }
+  }
+
+  async getTeamPermission(
+    org: string,
+    teamSlug: string,
+    repo: string,
+  ): Promise<TeamPermissionLevel | null> {
+    try {
+      // Con este formato GitHub devuelve el repositorio con los permisos del team (no un 204 vacío)
+      const { data } = await this.octokit.rest.teams.checkPermissionsForRepoInOrg({
+        org,
+        team_slug: teamSlug.toLowerCase(),
+        owner: org,
+        repo,
+        headers: { accept: 'application/vnd.github.v3.repository+json' },
+      });
+      return permissionLevel((data as { permissions?: { admin?: boolean; push?: boolean } }).permissions);
+    } catch (error) {
+      if ((error as { status?: number } | null)?.status === 404) return null;
+      throw new Error(`Failed to read team access of ${org}/${repo}: ${errorMessage(error)}`);
+    }
+  }
+
+  async listRepositoryHealth(org: string): Promise<RepositoryHealth[]> {
+    const health: RepositoryHealth[] = [];
+    let cursor: string | null = null;
+    try {
+      for (let page = 0; page < MAX_HEALTH_PAGES; page++) {
+        const response: HealthResponse = await this.octokit.graphql<HealthResponse>(HEALTH_QUERY, {
+          org,
+          cursor,
+        });
+        if (!response.organization) throw new Error(`Organization not found: ${org}`);
+        const { nodes, pageInfo } = response.organization.repositories;
+        for (const node of nodes) {
+          if (!node) continue;
+          health.push({
+            name: node.name,
+            pushedAt: node.pushedAt,
+            openPullRequests: node.pullRequests.totalCount,
+            ci: ciState(node.defaultBranchRef?.target?.statusCheckRollup?.state),
+            archived: node.isArchived,
+          });
+        }
+        if (!pageInfo.hasNextPage) break;
+        cursor = pageInfo.endCursor;
+      }
+      return health;
+    } catch (error) {
+      throw new Error(`Failed to read repository health of ${org}: ${errorMessage(error)}`);
+    }
+  }
+
   private mapRepositoryData(data: {
     id: number;
     name: string;
@@ -183,6 +308,9 @@ export class OctokitRepositoryGateway implements RepositoryGateway {
     private: boolean;
     html_url: string;
     owner: { login: string };
+    topics?: string[];
+    archived?: boolean;
+    is_template?: boolean;
   }): RepositoryData {
     return {
       id: data.id,
@@ -191,6 +319,9 @@ export class OctokitRepositoryGateway implements RepositoryGateway {
       private: data.private,
       url: data.html_url,
       owner: { login: data.owner.login },
+      topics: data.topics,
+      archived: data.archived,
+      isTemplate: data.is_template,
     };
   }
 }

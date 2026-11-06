@@ -19,6 +19,30 @@ export {
   type UpdateOvaInput,
   type UpdateOvaResult,
 } from './UpdateOvaUseCase';
+export {
+  ReconcileOvasUseCase,
+  REPAIR_BATCH_SIZE,
+  type AdoptResult,
+  type OvaRepair,
+  type ReconcileConfig,
+  type ReconcileReport,
+  type RepairAllResult,
+  type RepairIssue,
+  type RepairOutcome,
+  type UnregisteredRepo,
+} from './ReconcileOvasUseCase';
+export {
+  ChangeOvaStatusUseCase,
+  type ChangeOvaStatusInput,
+  type ChangeOvaStatusResult,
+} from './ChangeOvaStatusUseCase';
+export {
+  OvaHealthUseCase,
+  DEFAULT_STALE_AFTER_DAYS,
+  type OvaHealth,
+  type OvaHealthConfig,
+  type OvaHealthReport,
+} from './OvaHealthUseCase';
 export { SYSTEM_ACTOR } from './audit';
 export type {
   AuditAction,
@@ -63,8 +87,11 @@ export type {
   DeveloperRecord,
 } from './registry';
 export type { CreateRepositoryDTO, CreateRepositoryResult } from './dtos';
+export { TEAM_PERMISSION_RANK } from './ports';
 export type {
   RepositoryGateway,
+  RepositoryInspector,
+  RepositoryHealth,
   RepositoryData,
   CreateRepositoryOptions,
   TeamPermissionLevel,

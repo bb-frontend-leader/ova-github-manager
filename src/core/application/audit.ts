@@ -3,10 +3,16 @@
  * Cada entrada guarda una copia de los datos de la OVA, porque después puede dejar de existir.
  */
 
-export type AuditAction = 'ova.created' | 'ova.updated' | 'ova.removed';
+export type AuditAction =
+  | 'ova.created'
+  | 'ova.updated'
+  | 'ova.removed'
+  | 'ova.status_changed'
+  | 'ova.adopted'
+  | 'ova.repaired';
 
 export interface AuditChange {
-  field: 'school' | 'developer';
+  field: 'school' | 'developer' | 'status';
   from: string;
   to: string;
 }
@@ -14,10 +20,12 @@ export interface AuditChange {
 export interface AuditDetails {
   school?: string;
   developer?: string;
-  /** Solo en 'ova.updated' */
+  /** En 'ova.updated' y 'ova.status_changed' */
   changes?: AuditChange[];
   /** Solo en 'ova.removed': por qué se quitó del registro */
   reason?: 'deleted_in_github';
+  /** Solo en 'ova.adopted' y 'ova.repaired': qué se corrigió en GitHub */
+  fixed?: string[];
 }
 
 export interface NewAuditEntry {

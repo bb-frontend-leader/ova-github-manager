@@ -20,12 +20,14 @@ import type {
   SchoolRecord,
 } from '../../application/registry';
 import type { UserRecord, UserStore } from '../../application/users';
+import { isOvaStatus, OVA_STATUSES, type OvaStatus } from '../../domain/OvaStatus';
 import type { Role } from '../../domain/Role';
 
 const OVA_SELECT = `
-  SELECT o.id, o.repo_name, o.repo_url, o.created_by, o.created_at,
+  SELECT o.id, o.repo_name, o.repo_url, o.created_by, o.created_at, o.status,
+         COALESCE(o.status_changed_at, o.created_at) AS status_changed_at,
          s.id AS school_id, s.name AS school_name, s.slug AS school_slug,
-         d.id AS developer_id, d.name AS developer_name
+         d.id AS developer_id, d.name AS developer_name, d.github_login AS developer_login
   FROM ovas o
   JOIN schools s ON s.id = o.school_id
   JOIN developers d ON d.id = o.developer_id
@@ -37,11 +39,14 @@ interface OvaRow {
   repo_url: string;
   created_by: string;
   created_at: string;
+  status: string;
+  status_changed_at: string;
   school_id: number;
   school_name: string;
   school_slug: string;
   developer_id: number;
   developer_name: string;
+  developer_login: string | null;
 }
 
 interface AuditRow {
@@ -68,6 +73,10 @@ function parseDetails(raw: string): AuditDetails {
     return {}; // una fila dañada no debe romper toda la pantalla de actividad
   }
 }
+
+const NOW = "strftime('%Y-%m-%dT%H:%M:%fZ', 'now')";
+
+const DEVELOPER_SELECT = 'SELECT id, name, github_login AS githubLogin FROM developers';
 
 export function sqliteCode(error: unknown): string | undefined {
   return (error as { code?: string } | null)?.code;
@@ -123,12 +132,17 @@ export class SqliteProjectStore implements OvaRegistry, Catalog, UserStore, Audi
     return (row as SchoolRecord | undefined) ?? null;
   }
 
-  async addDeveloper(developer: { name: string }): Promise<DeveloperRecord> {
+  async addDeveloper(developer: {
+    name: string;
+    githubLogin?: string | null;
+  }): Promise<DeveloperRecord> {
+    const githubLogin = developer.githubLogin ?? null;
+    await this.assertLoginFree(githubLogin);
     try {
       const info = this.db
-        .prepare('INSERT INTO developers (project_id, name) VALUES (?, ?)')
-        .run(this.projectId, developer.name);
-      return { id: Number(info.lastInsertRowid), name: developer.name };
+        .prepare('INSERT INTO developers (project_id, name, github_login) VALUES (?, ?, ?)')
+        .run(this.projectId, developer.name, githubLogin);
+      return { id: Number(info.lastInsertRowid), name: developer.name, githubLogin };
     } catch (error) {
       if (isUniqueViolation(error)) {
         throw new DuplicateEntryError(`Developer already exists: ${developer.name}`);
@@ -139,15 +153,35 @@ export class SqliteProjectStore implements OvaRegistry, Catalog, UserStore, Audi
 
   async listDevelopers(): Promise<DeveloperRecord[]> {
     return this.db
-      .prepare('SELECT id, name FROM developers WHERE project_id = ? ORDER BY name')
+      .prepare(`${DEVELOPER_SELECT} WHERE project_id = ? ORDER BY name`)
       .all(this.projectId) as DeveloperRecord[];
   }
 
   async findDeveloper(id: number): Promise<DeveloperRecord | null> {
     const row = this.db
-      .prepare('SELECT id, name FROM developers WHERE id = ? AND project_id = ?')
+      .prepare(`${DEVELOPER_SELECT} WHERE id = ? AND project_id = ?`)
       .get(id, this.projectId);
     return (row as DeveloperRecord | undefined) ?? null;
+  }
+
+  async findDeveloperByLogin(login: string): Promise<DeveloperRecord | null> {
+    const row = this.db
+      .prepare(`${DEVELOPER_SELECT} WHERE project_id = ? AND github_login = ?`)
+      .get(this.projectId, login);
+    return (row as DeveloperRecord | undefined) ?? null;
+  }
+
+  async setDeveloperLogin(id: number, githubLogin: string | null): Promise<DeveloperRecord | null> {
+    const current = await this.findDeveloper(id);
+    if (!current) return null;
+    // Vincularlo de nuevo a la misma persona no es un conflicto
+    if (githubLogin !== null && githubLogin !== current.githubLogin) {
+      await this.assertLoginFree(githubLogin);
+    }
+    this.db
+      .prepare('UPDATE developers SET github_login = ? WHERE id = ? AND project_id = ?')
+      .run(githubLogin, id, this.projectId);
+    return this.findDeveloper(id);
   }
 
   // ---- Usuarios y roles ----
@@ -221,10 +255,18 @@ export class SqliteProjectStore implements OvaRegistry, Catalog, UserStore, Audi
     try {
       const info = this.db
         .prepare(
-          `INSERT INTO ovas (project_id, repo_name, repo_url, school_id, developer_id, created_by)
-           VALUES (?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO ovas (project_id, repo_name, repo_url, school_id, developer_id, created_by, status)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
         )
-        .run(this.projectId, ova.repoName, ova.repoUrl, ova.schoolId, ova.developerId, ova.createdBy);
+        .run(
+          this.projectId,
+          ova.repoName,
+          ova.repoUrl,
+          ova.schoolId,
+          ova.developerId,
+          ova.createdBy,
+          ova.status ?? 'development',
+        );
       id = Number(info.lastInsertRowid);
     } catch (error) {
       if (isUniqueViolation(error)) {
@@ -238,8 +280,12 @@ export class SqliteProjectStore implements OvaRegistry, Catalog, UserStore, Audi
 
   async list(filter: OvaFilter = {}): Promise<OvaRecord[]> {
     const conditions = ['o.project_id = ?'];
-    const params: number[] = [this.projectId];
+    const params: (string | number)[] = [this.projectId];
 
+    if (filter.status !== undefined) {
+      conditions.push('o.status = ?');
+      params.push(filter.status);
+    }
     if (filter.schoolId !== undefined) {
       conditions.push('o.school_id = ?');
       params.push(filter.schoolId);
@@ -260,7 +306,15 @@ export class SqliteProjectStore implements OvaRegistry, Catalog, UserStore, Audi
     await this.assertOwnCatalog(changes.schoolId, changes.developerId);
 
     const sets: string[] = [];
-    const params: number[] = [];
+    const params: (string | number)[] = [];
+    if (changes.status !== undefined) {
+      const current = (await this.findById(id)) as OvaRecord;
+      // Solo se reinicia el reloj del estado si de verdad cambia
+      if (current.status !== changes.status) {
+        sets.push('status = ?', `status_changed_at = ${NOW}`);
+        params.push(changes.status);
+      }
+    }
     if (changes.schoolId !== undefined) {
       sets.push('school_id = ?');
       params.push(changes.schoolId);
@@ -305,7 +359,7 @@ export class SqliteProjectStore implements OvaRegistry, Catalog, UserStore, Audi
     const byDeveloper = (
       this.db
         .prepare(
-          `SELECT d.id, d.name, COUNT(o.id) AS count
+          `SELECT d.id, d.name, d.github_login AS githubLogin, COUNT(o.id) AS count
            FROM developers d LEFT JOIN ovas o ON o.developer_id = d.id
            WHERE d.project_id = ?
            GROUP BY d.id ORDER BY d.name`,
@@ -313,7 +367,15 @@ export class SqliteProjectStore implements OvaRegistry, Catalog, UserStore, Audi
         .all(this.projectId) as (DeveloperRecord & { count: number })[]
     ).map(({ count, ...developer }) => ({ developer, count }));
 
-    return { total, bySchool, byDeveloper };
+    const statusRows = this.db
+      .prepare('SELECT status, COUNT(*) AS count FROM ovas WHERE project_id = ? GROUP BY status')
+      .all(this.projectId) as { status: string; count: number }[];
+    const byStatus = OVA_STATUSES.map((status) => ({
+      status,
+      count: statusRows.find((row) => row.status === status)?.count ?? 0,
+    }));
+
+    return { total, bySchool, byDeveloper, byStatus };
   }
 
   // ---- Registro de actividad ----
@@ -370,6 +432,13 @@ export class SqliteProjectStore implements OvaRegistry, Catalog, UserStore, Audi
     };
   }
 
+  /** Un usuario de GitHub solo puede estar vinculado a un desarrollador del proyecto. */
+  private async assertLoginFree(githubLogin: string | null): Promise<void> {
+    if (githubLogin !== null && (await this.findDeveloperByLogin(githubLogin))) {
+      throw new DuplicateEntryError(`GitHub user already linked: ${githubLogin}`);
+    }
+  }
+
   /** La escuela y el desarrollador deben ser de este proyecto, no de otro. */
   private async assertOwnCatalog(schoolId?: number, developerId?: number): Promise<void> {
     if (schoolId !== undefined && !(await this.findSchool(schoolId))) {
@@ -395,7 +464,9 @@ export class SqliteProjectStore implements OvaRegistry, Catalog, UserStore, Audi
       repoName: row.repo_name,
       repoUrl: row.repo_url,
       school: { id: row.school_id, name: row.school_name, slug: row.school_slug },
-      developer: { id: row.developer_id, name: row.developer_name },
+      developer: { id: row.developer_id, name: row.developer_name, githubLogin: row.developer_login },
+      status: (isOvaStatus(row.status) ? row.status : 'development') as OvaStatus,
+      statusChangedAt: row.status_changed_at,
       createdBy: row.created_by,
       createdAt: row.created_at,
     };

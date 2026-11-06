@@ -239,7 +239,7 @@ describe('CreateOvaUseCase', () => {
         throw new Error('disk full');
       },
       list: async () => [],
-      stats: async () => ({ total: 0, bySchool: [], byDeveloper: [] }),
+      stats: async () => ({ total: 0, bySchool: [], byDeveloper: [], byStatus: [] }),
       remove: async () => false,
       findById: async () => null,
       update: async () => null,
@@ -260,7 +260,7 @@ describe('CreateOvaUseCase', () => {
         throw 'boom';
       },
       list: async () => [],
-      stats: async () => ({ total: 0, bySchool: [], byDeveloper: [] }),
+      stats: async () => ({ total: 0, bySchool: [], byDeveloper: [], byStatus: [] }),
       remove: async () => false,
       findById: async () => null,
       update: async () => null,

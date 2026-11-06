@@ -28,21 +28,27 @@ const SCHEMA = `
   );
 
   CREATE TABLE IF NOT EXISTS developers (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    project_id INTEGER NOT NULL REFERENCES projects(id),
-    name       TEXT NOT NULL COLLATE NOCASE,
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id   INTEGER NOT NULL REFERENCES projects(id),
+    name         TEXT NOT NULL COLLATE NOCASE,
+    -- Usuario de GitHub de la persona (para "Mi trabajo"); NULL = sin vincular
+    github_login TEXT COLLATE NOCASE,
     UNIQUE (project_id, name)
   );
 
   CREATE TABLE IF NOT EXISTS ovas (
-    id           INTEGER PRIMARY KEY AUTOINCREMENT,
-    project_id   INTEGER NOT NULL REFERENCES projects(id),
-    repo_name    TEXT NOT NULL COLLATE NOCASE,
-    repo_url     TEXT NOT NULL,
-    school_id    INTEGER NOT NULL REFERENCES schools(id),
-    developer_id INTEGER NOT NULL REFERENCES developers(id),
-    created_by   TEXT NOT NULL,
-    created_at   TEXT NOT NULL DEFAULT (${NOW}),
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id        INTEGER NOT NULL REFERENCES projects(id),
+    repo_name         TEXT NOT NULL COLLATE NOCASE,
+    repo_url          TEXT NOT NULL,
+    school_id         INTEGER NOT NULL REFERENCES schools(id),
+    developer_id      INTEGER NOT NULL REFERENCES developers(id),
+    created_by        TEXT NOT NULL,
+    created_at        TEXT NOT NULL DEFAULT (${NOW}),
+    status            TEXT NOT NULL DEFAULT 'development'
+                      CHECK (status IN ('development', 'review', 'delivered')),
+    -- Cuándo pasó al estado actual (NULL = desde que se creó)
+    status_changed_at TEXT,
     UNIQUE (project_id, repo_name)
   );
 
@@ -81,6 +87,33 @@ function tableExists(db: Database.Database, name: string): boolean {
 function hasColumn(db: Database.Database, table: string, column: string): boolean {
   const columns = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
   return columns.some((c) => c.name === column);
+}
+
+/**
+ * Añade a una base ya existente lo que se incorporó después de crearla (el esquema solo crea
+ * tablas que faltan, no completa las que ya existen). Es idempotente.
+ */
+function ensureColumns(db: Database.Database): void {
+  db.transaction(() => {
+    if (!hasColumn(db, 'ovas', 'status')) {
+      db.exec(
+        `ALTER TABLE ovas ADD COLUMN status TEXT NOT NULL DEFAULT 'development'
+           CHECK (status IN ('development', 'review', 'delivered'))`,
+      );
+    }
+    if (!hasColumn(db, 'ovas', 'status_changed_at')) {
+      db.exec('ALTER TABLE ovas ADD COLUMN status_changed_at TEXT');
+    }
+    if (!hasColumn(db, 'developers', 'github_login')) {
+      db.exec('ALTER TABLE developers ADD COLUMN github_login TEXT COLLATE NOCASE');
+    }
+    // Un usuario de GitHub solo puede estar vinculado a un desarrollador por proyecto
+    db.exec(
+      `CREATE UNIQUE INDEX IF NOT EXISTS idx_developers_login
+         ON developers(project_id, github_login) WHERE github_login IS NOT NULL`,
+    );
+    db.exec('CREATE INDEX IF NOT EXISTS idx_ovas_status ON ovas(project_id, status)');
+  })();
 }
 
 /** Una base de la versión anterior tiene el catálogo y las OVAs sin proyecto. */
@@ -180,5 +213,6 @@ export function openDatabase(path: string, options: OpenOptions = {}): Database.
   } else {
     db.exec(SCHEMA);
   }
+  ensureColumns(db);
   return db;
 }

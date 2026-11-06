@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import Link from 'next/link';
 import {
   CalendarClock,
@@ -30,8 +31,11 @@ import { withBasePath } from '@/lib/base-path';
 import { requireProjectPermission } from '@/lib/dal';
 import { absoluteFormat, currentTime, relativeDate } from '@/lib/format';
 import { filterOvas, parseOvaQuery } from '@/lib/ova-filter';
+import { StatusBadge } from '@/components/status-badge';
 import { SyncButton } from '@/components/sync-button';
+import { OVA_STATUSES, STATUS_LABELS } from '@/lib/ova-status';
 import { syncOvasAction } from './actions';
+import { AttentionCard, AttentionFallback } from './attention-card';
 
 const PAGE_SIZE = 25;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -64,6 +68,7 @@ export default async function DashboardPage({
   searchParams: Promise<{
     schoolId?: string;
     developerId?: string;
+    status?: string;
     q?: string;
     page?: string;
     denied?: string;
@@ -81,7 +86,7 @@ export default async function DashboardPage({
 
   const params = await searchParams;
   const ovaQuery = parseOvaQuery(params);
-  const { schoolId, developerId, q: query } = ovaQuery;
+  const { schoolId, developerId, status, q: query } = ovaQuery;
   const removedCount = Math.max(0, Math.trunc(Number(params.count)) || 0);
   const removedNames = (params.removed ?? '').split(',').filter(Boolean);
 
@@ -109,13 +114,14 @@ export default async function DashboardPage({
 
   const filtered = filterOvas(all, ovaQuery);
 
-  const hasFilter = schoolId !== undefined || developerId !== undefined || query !== '';
+  const hasFilter =
+    schoolId !== undefined || developerId !== undefined || status !== undefined || query !== '';
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const page = Math.min(parsePage(params.page), pageCount);
   const rows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const canCreate = can(role, 'ova:create');
   const canEdit = can(role, 'ova:edit');
-  const baseParams = { schoolId, developerId, q: query };
+  const baseParams = { schoolId, developerId, status, q: query };
   const exportHref = `${base}/export${queryString(baseParams)}`;
 
   return (
@@ -254,6 +260,34 @@ export default async function DashboardPage({
         </Card>
       </div>
 
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Por estado</CardTitle>
+            <CardDescription>Selecciona un estado para ver sus OVAs.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <RankedBars
+              label="OVAs por estado"
+              empty="Aún no hay OVAs."
+              items={stats.byStatus.map(({ status: s, count }) => ({
+                id: s,
+                label: STATUS_LABELS[s],
+                count,
+                href: buildHref(base, { status: s }),
+                hrefLabel: `${STATUS_LABELS[s]}: ${count} OVAs. Ver listado`,
+              }))}
+            />
+            <Link href={`${base}/board`} className={buttonVariants({ variant: 'outline', size: 'sm', className: 'mt-4' })}>
+              Abrir el tablero
+            </Link>
+          </CardContent>
+        </Card>
+        <Suspense fallback={<AttentionFallback />}>
+          <AttentionCard services={access.services} base={base} />
+        </Suspense>
+      </div>
+
       <Card id="ovas" className="scroll-mt-20">
         <CardHeader>
           <CardTitle>
@@ -272,7 +306,7 @@ export default async function DashboardPage({
           <form
             method="get"
             action={withBasePath(base)}
-            className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.4fr)_1fr_1fr_auto]"
+            className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.4fr)_1fr_1fr_1fr_auto]"
           >
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="q">Buscar</Label>
@@ -309,6 +343,17 @@ export default async function DashboardPage({
                 {developers.map((developer) => (
                   <option key={developer.id} value={developer.id}>
                     {developer.name}
+                  </option>
+                ))}
+              </NativeSelect>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="status">Estado</Label>
+              <NativeSelect id="status" name="status" defaultValue={status ?? ''}>
+                <option value="">Todos</option>
+                {OVA_STATUSES.map((s) => (
+                  <option key={s} value={s}>
+                    {STATUS_LABELS[s]}
                   </option>
                 ))}
               </NativeSelect>
@@ -376,6 +421,7 @@ export default async function DashboardPage({
                       <TableHead>Repositorio</TableHead>
                       <TableHead>Escuela</TableHead>
                       <TableHead>Desarrollador</TableHead>
+                      <TableHead>Estado</TableHead>
                       <TableHead>Creada por</TableHead>
                       <TableHead className="text-right">Creada</TableHead>
                       {canEdit && (
@@ -407,6 +453,9 @@ export default async function DashboardPage({
                             <InitialsAvatar name={ova.developer.name} className="size-6 text-[0.65rem]" />
                             {ova.developer.name}
                           </span>
+                        </TableCell>
+                        <TableCell>
+                          <StatusBadge status={ova.status} />
                         </TableCell>
                         <TableCell className="text-muted-foreground">@{ova.createdBy}</TableCell>
                         <TableCell className="text-right text-muted-foreground">

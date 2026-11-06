@@ -172,7 +172,7 @@ describe('SqliteOvaStore · migración desde la versión de un solo proyecto', (
 
     expect(project).toMatchObject({ slug: '625-ovas-2027', org: 'org-vieja', total: 10 });
     expect(await store.listSchools()).toEqual([{ id: 7, name: 'Ingeniería', slug: 'ingenieria' }]);
-    expect(await store.listDevelopers()).toEqual([{ id: 3, name: 'Juan' }]);
+    expect(await store.listDevelopers()).toEqual([{ id: 3, name: 'Juan', githubLogin: null }]);
     expect(await store.findById(42)).toMatchObject({
       repoName: 'ova-001',
       school: { id: 7 },

@@ -22,6 +22,7 @@ export async function GET(
   const query = parseOvaQuery({
     schoolId: searchParams.get('schoolId') ?? undefined,
     developerId: searchParams.get('developerId') ?? undefined,
+    status: searchParams.get('status') ?? undefined,
     q: searchParams.get('q') ?? undefined,
   });
 

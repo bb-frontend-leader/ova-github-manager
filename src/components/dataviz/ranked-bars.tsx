@@ -2,7 +2,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 export interface RankedItem {
-  id: number;
+  id: number | string;
   label: string;
   count: number;
   /** Si se indica, la etiqueta es un enlace (p. ej. para filtrar el listado) */

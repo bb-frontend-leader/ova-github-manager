@@ -45,8 +45,24 @@ export async function addDeveloperAction(formData: FormData) {
   await run(formData, 'catalog:manage', async ({ services }) => {
     const developer = await services.manageCatalog.addDeveloper(
       String(formData.get('name') ?? ''),
+      String(formData.get('githubLogin') ?? ''),
     );
-    return `Desarrollador "${developer.name}" añadido.`;
+    const linked = developer.githubLogin ? ` y vinculado a @${developer.githubLogin}` : '';
+    return `Desarrollador "${developer.name}" añadido${linked}.`;
+  });
+}
+
+export async function linkDeveloperAction(formData: FormData) {
+  await run(formData, 'catalog:manage', async ({ services }) => {
+    const id = Number(formData.get('developerId'));
+    if (!Number.isInteger(id) || id <= 0) throw new Error('School or developer does not exist');
+    const developer = await services.manageCatalog.linkDeveloper(
+      id,
+      String(formData.get('githubLogin') ?? ''),
+    );
+    return developer.githubLogin
+      ? `${developer.name} ahora está vinculado a @${developer.githubLogin}.`
+      : `Se quitó el usuario de GitHub de ${developer.name}.`;
   });
 }
 

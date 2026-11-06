@@ -10,7 +10,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { requireProjectPermission } from '@/lib/dal';
-import { addDeveloperAction, addSchoolAction, addUserAction, changeRoleAction } from './actions';
+import {
+  addDeveloperAction,
+  addSchoolAction,
+  addUserAction,
+  changeRoleAction,
+  linkDeveloperAction,
+} from './actions';
 
 const ROLE_OPTIONS: Record<(typeof ROLES)[number], string> = {
   viewer: 'Lector · solo consulta',
@@ -112,15 +118,20 @@ export default async function AdminPage({
               Desarrolladores <Count>{developers.length}</Count>
             </CardTitle>
             <CardDescription>
-              Quedan en el registro de cada OVA. Los permisos en GitHub se gestionan por el equipo.
+              Quedan en el registro de cada OVA. Vincula a cada persona con su usuario de GitHub para que
+              vea su trabajo en «Mi trabajo». Los permisos en GitHub se gestionan por el equipo.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            <form action={addDeveloperAction} className="flex items-end gap-2">
+            <form action={addDeveloperAction} className="flex flex-wrap items-end gap-2">
               <input type="hidden" name="project" value={project.slug} />
-              <div className="flex flex-1 flex-col gap-1.5">
+              <div className="flex min-w-40 flex-1 flex-col gap-1.5">
                 <Label htmlFor="developer-name">Nuevo desarrollador</Label>
                 <Input id="developer-name" name="name" required autoComplete="off" placeholder="Nombre y apellido" />
+              </div>
+              <div className="flex min-w-32 flex-1 flex-col gap-1.5">
+                <Label htmlFor="developer-login">Usuario de GitHub (opcional)</Label>
+                <Input id="developer-login" name="githubLogin" autoComplete="off" placeholder="octocat" />
               </div>
               <Button type="submit">Añadir desarrollador</Button>
             </form>
@@ -131,9 +142,26 @@ export default async function AdminPage({
             ) : (
               <ul className="divide-y rounded-lg ring-1 ring-foreground/10">
                 {developers.map((developer) => (
-                  <li key={developer.id} className="flex items-center gap-2.5 px-3 py-2 text-sm">
-                    <InitialsAvatar name={developer.name} />
-                    {developer.name}
+                  <li key={developer.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm">
+                    <span className="flex items-center gap-2.5">
+                      <InitialsAvatar name={developer.name} />
+                      {developer.name}
+                    </span>
+                    <form action={linkDeveloperAction} className="flex items-center gap-2">
+                      <input type="hidden" name="project" value={project.slug} />
+                      <input type="hidden" name="developerId" value={developer.id} />
+                      <Input
+                        name="githubLogin"
+                        defaultValue={developer.githubLogin ?? ''}
+                        placeholder="Sin usuario de GitHub"
+                        autoComplete="off"
+                        aria-label={`Usuario de GitHub de ${developer.name}`}
+                        className="h-8 w-44"
+                      />
+                      <Button type="submit" variant="outline" size="sm">
+                        Guardar
+                      </Button>
+                    </form>
                   </li>
                 ))}
               </ul>

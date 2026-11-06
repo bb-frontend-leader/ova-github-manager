@@ -78,9 +78,9 @@ Entra quien sea **miembro activo de la organización de al menos un proyecto** (
 
 | Rol (en un proyecto) | Puede |
 |---|---|
-| Lector | Ver el panel y el listado |
-| Creador | Lo anterior + crear y editar OVAs |
-| Admin | Lo anterior + gestionar escuelas, desarrolladores y usuarios del proyecto |
+| Lector | Ver el panel, el tablero y su trabajo |
+| Creador | Lo anterior + crear OVAs, editarlas y cambiarles el estado |
+| Admin | Lo anterior + gestionar escuelas, desarrolladores y usuarios, y reparar repositorios |
 | Super administrador | Admin en todos los proyectos + crear y editar proyectos |
 
 - El rol se lee de la base de datos en **cada petición**: un cambio de rol surte efecto al instante.
@@ -88,6 +88,22 @@ Entra quien sea **miembro activo de la organización de al menos un proyecto** (
 - **Recuperación:** los usuarios de `INITIAL_ADMINS` son super administradores. Si se pierde el acceso, añade un usuario a esa variable y reinicia la herramienta.
 - No se puede quitar el rol al último admin de un proyecto.
 - Cada acción se autoriza en el servidor, junto a la acción; ocultar un botón no es la protección.
+
+## Seguimiento de las OVAs
+
+Cada OVA tiene un **estado**: *En desarrollo* (al crearla), *En revisión* o *Entregada*. Lo cambia quien pueda editar OVAs, con las flechas del tablero o de «Mi trabajo»; cada cambio queda en la actividad.
+
+| Pantalla | Para qué sirve | Quién |
+|---|---|---|
+| **Tablero** | Las OVAs en tres columnas por estado, con filtros. Cada tarjeta muestra PRs abiertos, resultado del CI y si está estancada. | Todos |
+| **Mi trabajo** | Las OVAs de la persona que entró y lo que necesita atención. Un admin puede ver las de otra persona. | Todos |
+| **Panel** | Reparto por estado, filtro por estado y «Requieren atención» (OVAs estancadas). | Todos |
+| **Reparar** | Compara GitHub con el registro: completa lo que falte (topic, team, permiso) y registra repositorios que existen pero la herramienta no conoce. | Admin |
+
+- **Estancada:** una OVA *en curso* (no entregada) sin ningún push desde hace **10 días o más**. Los datos salen de GitHub (una consulta GraphQL por cada 100 repositorios) y se reutilizan 3 minutos; si GitHub falla o tarda, las pantallas funcionan igual y avisan de que no hay datos.
+- **Mi trabajo** necesita que la persona esté vinculada a un desarrollador: en Administración, el campo «Usuario de GitHub» de cada desarrollador. Un usuario solo puede estar vinculado a un desarrollador por proyecto.
+- **Reparar** solo *añade*: nunca quita topics ni baja el permiso de un team. Corrige por tandas de 25 para no saturar a GitHub; se repite hasta que no quede ninguna. Un repositorio que GitHub creó pero respondió con error se puede registrar ahí con su escuela y desarrollador.
+- Las bases de datos existentes se actualizan solas al arrancar (columnas `status`, `status_changed_at` y `github_login`); todas las OVAs previas quedan «En desarrollo».
 
 ## Datos de cada OVA
 

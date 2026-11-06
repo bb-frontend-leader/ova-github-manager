@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { withBasePath } from '@/lib/base-path';
 import { requireProjectPermission } from '@/lib/dal';
 import { absoluteFormat, currentTime, relativeDate } from '@/lib/format';
+import { STATUS_LABELS, isOvaStatus } from '@/lib/ova-status';
 
 export const metadata = { title: 'Actividad' };
 
@@ -23,7 +24,16 @@ const ACTIONS: Record<AuditAction, { label: string; variant: 'default' | 'second
   'ova.created': { label: 'Creada', variant: 'default' },
   'ova.updated': { label: 'Editada', variant: 'secondary' },
   'ova.removed': { label: 'Quitada', variant: 'destructive' },
+  'ova.status_changed': { label: 'Cambió de estado', variant: 'secondary' },
+  'ova.adopted': { label: 'Registrada', variant: 'default' },
+  'ova.repaired': { label: 'Reparada', variant: 'secondary' },
 };
+
+const FIELD_LABELS = { school: 'Escuela', developer: 'Desarrollador', status: 'Estado' } as const;
+
+function displayValue(field: 'school' | 'developer' | 'status', value: string): string {
+  return field === 'status' && isOvaStatus(value) ? STATUS_LABELS[value] : value;
+}
 
 function isAction(value: string | undefined): value is AuditAction {
   return value !== undefined && value in ACTIONS;
@@ -45,18 +55,26 @@ function href(base: string, params: { q?: string; action?: string; page?: number
 
 function Detail({ entry }: { entry: AuditEntry }) {
   const { details } = entry;
-  if (entry.action === 'ova.updated' && details.changes?.length) {
+  if ((entry.action === 'ova.updated' || entry.action === 'ova.status_changed') && details.changes?.length) {
     return (
       <ul className="flex flex-col gap-0.5">
         {details.changes.map((change) => (
           <li key={change.field}>
-            <span className="text-muted-foreground">
-              {change.field === 'school' ? 'Escuela' : 'Desarrollador'}:
-            </span>{' '}
-            {change.from} <span aria-label="cambió a">→</span> <span className="font-medium">{change.to}</span>
+            <span className="text-muted-foreground">{FIELD_LABELS[change.field]}:</span>{' '}
+            {displayValue(change.field, change.from)} <span aria-label="cambió a">→</span>{' '}
+            <span className="font-medium">{displayValue(change.field, change.to)}</span>
           </li>
         ))}
       </ul>
+    );
+  }
+  if (entry.action === 'ova.adopted' || entry.action === 'ova.repaired') {
+    const fixed = details.fixed?.length ? `Se corrigió ${details.fixed.join(' y ')}` : 'Ya estaba en orden';
+    return (
+      <span className="text-muted-foreground">
+        {entry.action === 'ova.adopted' ? 'Ya existía en GitHub · ' : ''}
+        {[fixed, details.school, details.developer].filter(Boolean).join(' · ')}
+      </span>
     );
   }
   if (entry.action === 'ova.removed') {

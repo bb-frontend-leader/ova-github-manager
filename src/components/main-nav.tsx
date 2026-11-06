@@ -1,12 +1,24 @@
 'use client';
 
-import { History, LayoutDashboard, CirclePlus, Settings2, SlidersHorizontal } from 'lucide-react';
+import {
+  CirclePlus,
+  Columns3,
+  History,
+  LayoutDashboard,
+  Settings2,
+  SlidersHorizontal,
+  UserRound,
+  Wrench,
+} from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
 const ICONS = {
   panel: LayoutDashboard,
+  tablero: Columns3,
+  trabajo: UserRound,
+  reparar: Wrench,
   crear: CirclePlus,
   actividad: History,
   admin: Settings2,

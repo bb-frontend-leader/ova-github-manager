@@ -6,7 +6,9 @@ const ova = (overrides: Partial<OvaRecord> = {}): OvaRecord => ({
   repoName: 'GR-1',
   repoUrl: 'https://github.com/mi-org/GR-1',
   school: { id: 1, name: 'Ingeniería', slug: 'ingenieria' },
-  developer: { id: 1, name: 'Juan Pérez' },
+  developer: { id: 1, name: 'Juan Pérez', githubLogin: null },
+  status: 'development',
+  statusChangedAt: '2026-11-05T10:30:00.000Z',
   createdBy: 'alejo',
   createdAt: '2026-11-05T10:30:00.000Z',
   ...overrides,
@@ -17,10 +19,10 @@ describe('ovasToCsv', () => {
     const lines = ovasToCsv([ova()]).split('\r\n');
 
     expect(lines[0]).toBe(
-      'Repositorio;Enlace del repositorio;Escuela;Topic;Desarrollador;Creada por;Fecha de creación (UTC)',
+      'Repositorio;Enlace del repositorio;Escuela;Topic;Desarrollador;Estado;Creada por;Fecha de creación (UTC)',
     );
     expect(lines[1]).toBe(
-      'GR-1;https://github.com/mi-org/GR-1;Ingeniería;ingenieria;Juan Pérez;alejo;2026-11-05T10:30:00.000Z',
+      'GR-1;https://github.com/mi-org/GR-1;Ingeniería;ingenieria;Juan Pérez;En desarrollo;alejo;2026-11-05T10:30:00.000Z',
     );
     expect(lines[2]).toBe('');
   });
@@ -30,7 +32,9 @@ describe('ovasToCsv', () => {
   });
 
   it('entrecomilla las celdas con separador, comillas o saltos de línea', () => {
-    const csv = ovasToCsv([ova({ developer: { id: 1, name: 'Pérez; "Juan"\nJr' } })]);
+    const csv = ovasToCsv([
+      ova({ developer: { id: 1, name: 'Pérez; "Juan"\nJr', githubLogin: null } }),
+    ]);
 
     expect(csv).toContain('"Pérez; ""Juan""\nJr"');
   });
@@ -38,7 +42,7 @@ describe('ovasToCsv', () => {
   it.each(['=SUMA(A1)', '+1', '-1', '@usuario'])(
     'neutraliza las celdas que Excel leería como fórmula: %s',
     (name) => {
-      const csv = ovasToCsv([ova({ developer: { id: 1, name } })]);
+      const csv = ovasToCsv([ova({ developer: { id: 1, name, githubLogin: null } })]);
 
       expect(csv).toContain(`;'${name};`);
     },
