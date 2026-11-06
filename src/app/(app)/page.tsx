@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { ArrowRight, FolderPlus, FolderOpen } from 'lucide-react';
+import { ArrowRight, FolderPlus, FolderOpen, Upload } from 'lucide-react';
 import { Alert } from '@/components/alert';
 import { Meter } from '@/components/dataviz/meter';
 import { EmptyState } from '@/components/empty-state';
@@ -40,9 +40,14 @@ export default async function ProjectsPage({
         description="Cada proyecto es una organización de GitHub con sus propias OVAs, escuelas, desarrolladores y usuarios."
         actions={
           viewer.superAdmin && (
-            <Link href="/projects/new" className={buttonVariants()}>
-              <FolderPlus aria-hidden /> Nuevo proyecto
-            </Link>
+            <>
+              <Link href="/projects/import" className={buttonVariants({ variant: 'outline' })}>
+                <Upload aria-hidden /> Importar proyecto
+              </Link>
+              <Link href="/projects/new" className={buttonVariants()}>
+                <FolderPlus aria-hidden /> Nuevo proyecto
+              </Link>
+            </>
           )
         }
       />

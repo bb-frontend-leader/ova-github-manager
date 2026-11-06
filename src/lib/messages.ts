@@ -5,6 +5,15 @@
 
 type Rule = [test: RegExp, message: (match: RegExpMatchArray) => string];
 
+const ARCHIVE_PROBLEMS: Record<string, string> = {
+  required: 'falta el dato',
+  invalid: 'el dato no es válido',
+  duplicate: 'el dato está repetido',
+  'unknown-school': 'esa escuela no está en el archivo',
+  'unknown-developer': 'ese desarrollador no está en el archivo',
+  'too-many': 'hay demasiados elementos',
+};
+
 const RULES: Rule[] = [
   // Nombre de la OVA
   [/^Repository name cannot be empty/, () => 'Escribe el nombre de la OVA.'],
@@ -99,6 +108,25 @@ const RULES: Rule[] = [
     (m) => `Ya existe un proyecto con el identificador "${m[1]}". Cambia el nombre o el identificador.`,
   ],
   [/^Project not found/, () => 'Ese proyecto ya no existe.'],
+
+  // Importar un proyecto
+  [
+    /^Project file is not valid JSON/,
+    () => 'El archivo no se pudo leer. Usa uno descargado con «Exportar proyecto», sin modificar.',
+  ],
+  [
+    /^Project file is not a project export/,
+    () => 'Ese archivo no es una exportación de proyecto de esta herramienta.',
+  ],
+  [
+    /^Project file version not supported: (.+)/,
+    () => 'El archivo se creó con otra versión del formato. Actualiza la herramienta o vuelve a exportarlo.',
+  ],
+  [
+    /^Invalid project file at (.+?): ([a-z-]+)/,
+    (m) => `El archivo tiene un error en «${m[1]}»: ${ARCHIVE_PROBLEMS[m[2]] ?? 'el dato no es válido'}. No se importó nada.`,
+  ],
+  [/^Archive is inconsistent/, () => 'El archivo tiene datos que no cuadran entre sí. No se importó nada.'],
 
   // Usuarios
   [/^GitHub username cannot be empty/, () => 'Escribe el usuario de GitHub.'],

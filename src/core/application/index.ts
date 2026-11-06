@@ -51,7 +51,20 @@ export {
   type BackupStatus,
   type DatabaseBackup,
 } from './BackupUseCase';
-export { SYSTEM_ACTOR } from './audit';
+export {
+  ProjectArchiveUseCase,
+  parseProjectArchive,
+  ARCHIVE_FORMAT,
+  ARCHIVE_VERSION,
+  type ArchiveCounts,
+  type ExportResult,
+  type ImportOptions,
+  type ImportResult,
+  type ProjectArchive,
+  type ProjectArchiveStore,
+  type ProjectSnapshot,
+} from './ProjectArchive';
+export { SYSTEM_ACTOR, AUDIT_ACTIONS } from './audit';
 export type {
   AuditAction,
   AuditChange,

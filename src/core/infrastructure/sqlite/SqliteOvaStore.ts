@@ -1,5 +1,5 @@
 import type Database from 'better-sqlite3';
-import { DuplicateEntryError } from '../../application/errors';
+import type { ProjectArchiveStore, ProjectSnapshot } from '../../application/ProjectArchive';
 import type {
   ProjectChanges,
   ProjectRecord,
@@ -8,7 +8,8 @@ import type {
 } from '../../application/projects';
 import type { ProjectDetails } from '../../domain/Project';
 import { openDatabase, type OpenOptions } from './schema';
-import { SqliteProjectStore, isUniqueViolation } from './SqliteProjectStore';
+import { SqliteProjectStore } from './SqliteProjectStore';
+import { asProjectConflict, importProjectSnapshot, readProjectSnapshot } from './SqliteProjectArchive';
 
 interface ProjectRow {
   id: number;
@@ -44,7 +45,7 @@ function mapProject(row: ProjectRow): ProjectRecord {
  * Lo de cada proyecto (catálogo, OVAs, usuarios, actividad) se obtiene con `forProject`.
  * Usa `:memory:` como ruta para pruebas.
  */
-export class SqliteOvaStore implements ProjectStore, SignInRecorder {
+export class SqliteOvaStore implements ProjectStore, SignInRecorder, ProjectArchiveStore {
   private readonly db: Database.Database;
 
   constructor(path: string, options: OpenOptions = {}) {
@@ -114,16 +115,19 @@ export class SqliteOvaStore implements ProjectStore, SignInRecorder {
         .run(project);
       id = Number(info.lastInsertRowid);
     } catch (error) {
-      if (isUniqueViolation(error)) {
-        const onOrg = String((error as Error).message).includes('projects.org');
-        throw new DuplicateEntryError(
-          onOrg
-            ? `Organization already registered: ${project.org}`
-            : `Project already exists: ${project.slug}`,
-        );
-      }
-      throw error;
+      throw asProjectConflict(error, project);
     }
+    return (await this.findProjectById(id)) as ProjectRecord;
+  }
+
+  // ---- Exportar e importar un proyecto ----
+
+  async readProject(projectId: number): Promise<ProjectSnapshot | null> {
+    return readProjectSnapshot(this.db, projectId);
+  }
+
+  async importProject(snapshot: ProjectSnapshot): Promise<ProjectRecord> {
+    const id = importProjectSnapshot(this.db, snapshot);
     return (await this.findProjectById(id)) as ProjectRecord;
   }
 

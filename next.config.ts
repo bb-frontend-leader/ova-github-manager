@@ -16,6 +16,10 @@ const nextConfig: NextConfig = {
   env: { NEXT_PUBLIC_BASE_PATH: BASE_PATH },
   // Módulo nativo: Next debe cargarlo desde node_modules, no empaquetarlo
   serverExternalPackages: ["better-sqlite3"],
+  experimental: {
+    // Importar un proyecto sube su archivo JSON (con la actividad puede pasar de 1 MB, el límite por defecto)
+    serverActions: { bodySizeLimit: "10mb" },
+  },
   turbopack: {
     rules: {
       "*.css": {

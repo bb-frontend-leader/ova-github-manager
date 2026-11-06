@@ -3,13 +3,15 @@
  * Cada entrada guarda una copia de los datos de la OVA, porque después puede dejar de existir.
  */
 
-export type AuditAction =
-  | 'ova.created'
-  | 'ova.updated'
-  | 'ova.removed'
-  | 'ova.status_changed'
-  | 'ova.adopted'
-  | 'ova.repaired';
+export const AUDIT_ACTIONS = [
+  'ova.created',
+  'ova.updated',
+  'ova.removed',
+  'ova.status_changed',
+  'ova.adopted',
+  'ova.repaired',
+] as const;
+export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
 export interface AuditChange {
   field: 'school' | 'developer' | 'status';

@@ -129,6 +129,22 @@ node scripts/restore-backup.cjs data/backups/ova-2026-11-06T10-05-09Z.db
 
 Comprueba la copia, deja la base actual junto a ella como `ova.db.antes-de-restaurar-<fecha>` y pone la copia en su lugar (`--db <ruta>` para otra base). Después vuelve a arrancar.
 
+## Exportar e importar un proyecto
+
+Un proyecto completo (ajustes, escuelas, desarrolladores, OVAs con su estado y fechas, usuarios con su rol y toda la actividad) cabe en **un archivo JSON**. Sirve para pasarlo a otra instalación de la herramienta, recuperarlo o tener una copia legible. Solo lo hacen los **super administradores**, porque el archivo incluye a los usuarios.
+
+- **Exportar:** en el proyecto → *Proyecto* (ajustes) → «Exportar proyecto». Descarga `<proyecto>-proyecto-AAAA-MM-DD.json`.
+- **Importar:** en *Proyectos* → «Importar proyecto», eligiendo el archivo (hasta 8 MB).
+
+Qué hay que saber al importar:
+
+- **Siempre crea un proyecto nuevo**: nunca mezcla ni sobrescribe uno existente. La organización de GitHub debe ser única, así que no se puede importar un proyecto cuya organización ya está registrada aquí (sirve para otra instalación o tras vaciar la base). Si el *identificador* ya está en uso, se puede elegir otro en el formulario.
+- **Todo o nada**: el archivo se valida entero antes de guardar nada (formatos, repetidos, escuelas y desarrolladores que no existen, enlaces que no sean https…) y se guarda en una sola transacción. Si algo falla, se indica dónde (p. ej. «ovas[12].status») y no queda nada a medias.
+- La herramienta debe poder ver la organización del archivo con su token.
+- **Los usuarios conservan su rol, pero entran sin verificar**: recuperan el acceso al iniciar sesión, cuando se comprueba que siguen en la organización. El archivo no puede dar acceso por sí solo.
+- **GitHub no se toca**: los repositorios deben existir ya; lo que falte se corrige desde *Reparar*.
+- El archivo **no** lleva secretos ni el `.env.local`, pero sí los usuarios y el historial: guárdalo con cuidado.
+
 ## Datos de cada OVA
 
 Al llegar una OVA se conocen solo tres datos:

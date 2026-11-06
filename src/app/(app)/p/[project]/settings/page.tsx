@@ -1,7 +1,10 @@
 import { redirect } from 'next/navigation';
 import { Alert } from '@/components/alert';
 import { PageHeader } from '@/components/page-header';
-import { Card, CardContent } from '@/components/ui/card';
+import { Download } from 'lucide-react';
+import { buttonVariants } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { withBasePath } from '@/lib/base-path';
 import { getProjectAccess } from '@/lib/dal';
 import { updateProjectAction } from '../../../projects/actions';
 import { ProjectForm } from '../../../projects/project-form';
@@ -55,6 +58,26 @@ export default async function ProjectSettingsPage({
               total: String(project.total),
             }}
           />
+        </CardContent>
+      </Card>
+
+      <Card className="max-w-3xl">
+        <CardHeader>
+          <CardTitle>Exportar el proyecto</CardTitle>
+          <CardDescription>
+            Un archivo con los ajustes, el catálogo, las OVAs, los usuarios y toda la actividad. Sirve para
+            pasar el proyecto a otra instalación de la herramienta o para tener una copia que se pueda
+            importar (en «Proyectos» → «Importar proyecto»). Guárdalo en un lugar seguro: incluye a los usuarios.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <a
+            href={withBasePath(`/p/${project.slug}/archive`)}
+            download
+            className={buttonVariants({ variant: 'outline', className: 'w-fit' })}
+          >
+            <Download aria-hidden /> Exportar proyecto
+          </a>
         </CardContent>
       </Card>
     </div>

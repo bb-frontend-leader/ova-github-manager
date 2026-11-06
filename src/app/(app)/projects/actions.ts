@@ -65,6 +65,47 @@ export async function createProjectAction(
   redirect(target);
 }
 
+export type ImportFormState =
+  | { status: 'idle' }
+  | { status: 'error'; message: string; slug: string; attempt: number };
+
+// El archivo de un proyecto grande con todo su historial; el límite de la petición es de 10 MB
+const MAX_IMPORT_BYTES = 8 * 1024 * 1024;
+
+/**
+ * Crea un proyecto nuevo a partir de un archivo exportado (solo super administradores).
+ * Siempre es un proyecto nuevo: no mezcla ni sobrescribe uno existente.
+ */
+export async function importProjectAction(
+  _previous: ImportFormState,
+  formData: FormData,
+): Promise<ImportFormState> {
+  const slug = String(formData.get('slug') ?? '');
+  const fail = (message: string): ImportFormState => ({ status: 'error', message, slug, attempt: Date.now() });
+
+  const authz = await authorizeSuperAdminAction();
+  if (!authz.ok) return fail(authz.message);
+
+  const file = formData.get('file');
+  if (!(file instanceof File) || file.size === 0) return fail('Elige el archivo del proyecto que quieres importar.');
+  if (file.size > MAX_IMPORT_BYTES) return fail('El archivo pesa más de 8 MB. Revisa que sea una exportación de proyecto.');
+
+  let target: string;
+  try {
+    const { project, counts } = await getServices().projectArchive.import(await file.text(), { slug });
+    const summary = `${counts.ovas} OVAs, ${counts.schools} escuelas, ${counts.developers} desarrolladores y ${counts.members} usuarios`;
+    const query = new URLSearchParams({
+      ok: `Proyecto "${project.name}" importado: ${summary}. Cada usuario recupera su acceso al iniciar sesión.`,
+    });
+    target = `/p/${project.slug}/settings?${query}`;
+  } catch (error) {
+    console.error('[importProjectAction]', error);
+    return fail(translateError(error));
+  }
+
+  redirect(target);
+}
+
 /** Edita nombre, plantilla, team, prefijo y objetivo de un proyecto (solo super administradores). */
 export async function updateProjectAction(
   _previous: ProjectFormState,

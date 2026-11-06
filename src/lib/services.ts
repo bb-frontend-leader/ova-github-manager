@@ -12,6 +12,7 @@ import {
   OctokitRepositoryGateway,
   OvaHealthUseCase,
   Project,
+  ProjectArchiveUseCase,
   ReconcileOvasUseCase,
   SignInUseCase,
   SqliteDatabaseBackup,
@@ -33,6 +34,7 @@ export interface Services {
   signIn: SignInUseCase;
   manageProjects: ManageProjectsUseCase;
   backups: BackupUseCase;
+  projectArchive: ProjectArchiveUseCase;
   /** Carpeta donde se guardan las copias de seguridad */
   backupDir: string;
 }
@@ -59,7 +61,7 @@ const globalForServices = globalThis as unknown as {
 };
 
 /** Súbelo cada vez que cambie la forma de `Services`, para invalidar la caché de desarrollo. */
-const SERVICES_VERSION = 7;
+const SERVICES_VERSION = 8;
 
 export function getServices(): Services {
   const cached = globalForServices.__ovaServices;
@@ -114,6 +116,7 @@ function buildServices(): Services {
     signIn: new SignInUseCase(store, { superAdmins: env.INITIAL_ADMINS }),
     manageProjects: new ManageProjectsUseCase(store, gateway),
     backups,
+    projectArchive: new ProjectArchiveUseCase(store, gateway),
     backupDir,
   };
 }
