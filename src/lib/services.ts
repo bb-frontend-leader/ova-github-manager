@@ -13,12 +13,14 @@ import {
   OvaHealthUseCase,
   Project,
   ProjectArchiveUseCase,
+  ReassignOvasUseCase,
   ReconcileOvasUseCase,
   SignInUseCase,
   SqliteDatabaseBackup,
   SqliteOvaStore,
   SyncOvasUseCase,
   UpdateOvaUseCase,
+  WorkloadUseCase,
   type ProjectDetails,
   type ProjectRecord,
   type SqliteProjectStore,
@@ -51,6 +53,8 @@ export interface ProjectServices {
   changeStatus: ChangeOvaStatusUseCase;
   reconcile: ReconcileOvasUseCase;
   health: OvaHealthUseCase;
+  workload: WorkloadUseCase;
+  reassign: ReassignOvasUseCase;
 }
 
 // En desarrollo, el hot reload recarga los módulos: se guarda en globalThis para no
@@ -141,12 +145,15 @@ export function getProjectServices(project: ProjectRecord): ProjectServices {
 
   // El almacén del proyecto hace de registro, catálogo, usuarios y registro de actividad
   const syncOvas = new SyncOvasUseCase(gateway, store, { org: project.org }, store);
+  const updateOva = new UpdateOvaUseCase(gateway, store, store, { org: project.org }, store);
 
   return {
     project,
     store,
     syncOvas,
-    updateOva: new UpdateOvaUseCase(gateway, store, store, { org: project.org }, store),
+    updateOva,
+    reassign: new ReassignOvasUseCase(updateOva, store),
+    workload: new WorkloadUseCase(store, store),
     changeStatus: new ChangeOvaStatusUseCase(store, store),
     reconcile: new ReconcileOvasUseCase(
       gateway,

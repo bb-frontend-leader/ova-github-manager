@@ -93,7 +93,8 @@ export async function importProjectAction(
   let target: string;
   try {
     const { project, counts } = await getServices().projectArchive.import(await file.text(), { slug });
-    const summary = `${counts.ovas} OVAs, ${counts.schools} escuelas, ${counts.developers} desarrolladores y ${counts.members} usuarios`;
+    const n = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
+    const summary = `${n(counts.ovas, 'OVA', 'OVAs')}, ${n(counts.schools, 'escuela', 'escuelas')}, ${n(counts.developers, 'desarrollador', 'desarrolladores')} y ${n(counts.members, 'usuario', 'usuarios')}`;
     const query = new URLSearchParams({
       ok: `Proyecto "${project.name}" importado: ${summary}. Cada usuario recupera su acceso al iniciar sesión.`,
     });

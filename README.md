@@ -98,9 +98,12 @@ Cada OVA tiene un **estado**: *En desarrollo* (al crearla), *En revisión* o *En
 | **Tablero** | Las OVAs en tres columnas por estado, con filtros. Cada tarjeta muestra PRs abiertos, resultado del CI y si está estancada. | Todos |
 | **Mi trabajo** | Las OVAs de la persona que entró y lo que necesita atención. Un admin puede ver las de otra persona. | Todos |
 | **Panel** | Reparto por estado, filtro por estado y «Requieren atención» (OVAs estancadas). | Todos |
+| **Carga** | Cuántas OVAs lleva cada persona (desarrollo, revisión, entregadas), quién tiene mucha carga o hueco, y reasignar varias OVAs a otra persona de una vez. | Todos ven; quien puede editar OVAs reasigna |
 | **Reparar** | Compara GitHub con el registro: completa lo que falte (topic, team, permiso) y registra repositorios que existen pero la herramienta no conoce. | Admin |
 
 - **Estancada:** una OVA *en curso* (no entregada) sin ningún push desde hace **10 días o más**. Los datos salen de GitHub (una consulta GraphQL por cada 100 repositorios) y se reutilizan 3 minutos; si GitHub falla o tarda, las pantallas funcionan igual y avisan de que no hay datos.
+- **Carga:** la carga de una persona son sus OVAs *activas* (en desarrollo + en revisión); las entregadas no cuentan. Se compara con el promedio de **todos** los desarrolladores del catálogo, incluidos los que no tienen OVAs: «Carga alta» es tener al menos 1,5 veces el promedio y 2 OVAs más; «Con hueco», la mitad o menos y 2 menos. Con promedios chicos una diferencia de 1 no se marca.
+- **Reasignar en lote:** en *Carga*, abre «Ver y reasignar» de una persona, marca las OVAs (o «Marcar todas»), elige a quién pasarlas y pulsa *Reasignar*. Hasta 200 por vez. Solo cambia quién la lleva en el registro (GitHub no se toca); cada OVA queda anotada en la actividad con quién lo hizo. Si alguna ya no existe se informa y las demás se cambian igual.
 - **Mi trabajo** necesita que la persona esté vinculada a un desarrollador: en Administración, el campo «Usuario de GitHub» de cada desarrollador. Un usuario solo puede estar vinculado a un desarrollador por proyecto.
 - **Reparar** solo *añade*: nunca quita topics ni baja el permiso de un team. Corrige por tandas de 25 para no saturar a GitHub; se repite hasta que no quede ninguna. Un repositorio que GitHub creó pero respondió con error se puede registrar ahí con su escuela y desarrollador.
 - Las bases de datos existentes se actualizan solas al arrancar (columnas `status`, `status_changed_at` y `github_login`); todas las OVAs previas quedan «En desarrollo».

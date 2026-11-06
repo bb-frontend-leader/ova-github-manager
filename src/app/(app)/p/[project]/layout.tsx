@@ -21,6 +21,7 @@ export default async function ProjectLayout({
   const items: NavItem[] = [{ href: base, label: 'Panel', icon: 'panel', exact: true }];
   items.push({ href: `${base}/board`, label: 'Tablero', icon: 'tablero' });
   items.push({ href: `${base}/mine`, label: 'Mi trabajo', icon: 'trabajo' });
+  items.push({ href: `${base}/workload`, label: 'Carga', icon: 'carga' });
   if (can(role, 'ova:create')) items.push({ href: `${base}/ovas/new`, label: 'Crear OVA', icon: 'crear' });
   items.push({ href: `${base}/activity`, label: 'Actividad', icon: 'actividad' });
   if (can(role, 'catalog:manage')) items.push({ href: `${base}/reconcile`, label: 'Reparar', icon: 'reparar' });

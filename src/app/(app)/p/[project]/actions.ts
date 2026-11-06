@@ -63,6 +63,57 @@ export async function changeStatusAction(formData: FormData) {
 }
 
 /**
+ * Pasa las OVAs marcadas a otro desarrollador (desde "Carga") y vuelve a la página de origen.
+ * `redirect` lanza una excepción, así que se llama siempre fuera del try/catch.
+ */
+export async function reassignOvasAction(formData: FormData) {
+  const slug = String(formData.get('project') ?? '');
+  const returnTo = String(formData.get('returnTo') ?? '');
+  const developerId = Number(formData.get('developerId'));
+  const ovaIds = formData.getAll('ids').map(Number);
+
+  const authz = await authorizeProjectAction(slug, 'ova:edit');
+  if (!authz.ok) redirect(returnUrl(slug, returnTo, { error: authz.message }));
+  if (!Number.isInteger(developerId) || developerId <= 0) {
+    redirect(returnUrl(slug, returnTo, { error: translateError('School or developer does not exist') }));
+  }
+  const { login, services } = authz.value;
+
+  let result: { ok?: string; error?: string };
+  try {
+    const { developer, moved, unchanged, failed, warnings } = await services.reassign.execute({
+      ovaIds,
+      developerId,
+      actor: login,
+    });
+
+    const parts: string[] = [];
+    if (moved.length > 0) {
+      parts.push(`${moved.length} ${moved.length === 1 ? 'OVA pasó' : 'OVAs pasaron'} a ${developer.name}.`);
+    }
+    if (unchanged.length > 0) {
+      parts.push(
+        `${unchanged.length} ${unchanged.length === 1 ? 'ya era' : 'ya eran'} de ${developer.name}, sin cambios.`,
+      );
+    }
+    if (warnings > 0) parts.push('Los cambios se guardaron, pero algunos no se pudieron anotar en la actividad.');
+
+    result = {
+      ok: parts.length > 0 ? parts.join(' ') : undefined,
+      error:
+        failed.length > 0
+          ? `No se pudieron cambiar ${failed.length} OVAs: ${translateError(failed[0].message)}`
+          : undefined,
+    };
+  } catch (error) {
+    console.error('[reassignOvasAction]', error);
+    result = { error: translateError(error) };
+  }
+
+  redirect(returnUrl(slug, returnTo, result));
+}
+
+/**
  * Concilia el registro con GitHub: quita las OVAs cuyo repositorio ya no existe.
  * `redirect` lanza una excepción, así que se llama siempre fuera del try/catch.
  */

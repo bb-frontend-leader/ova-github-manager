@@ -63,6 +63,8 @@ const RULES: Rule[] = [
   [/The template repository cannot be registered/, () => 'Ese repositorio es la plantilla de OVAs, no se puede registrar como una OVA.'],
   [/^Repository not found/, () => 'Ese repositorio no existe en GitHub. Puede que lo hayan borrado o renombrado.'],
   [/^Invalid OVA status/, () => 'Elige un estado de la lista.'],
+  [/^No OVAs selected/, () => 'Marca al menos una OVA.'],
+  [/^Too many OVAs selected: max ([0-9]+)/, (m) => `Puedes reasignar hasta ${m[1]} OVAs a la vez. Marca menos.`],
   [/^GitHub user already linked: (.+)/, (m) => `@${m[1]} ya está vinculado a otro desarrollador de este proyecto.`],
   [/^OVA not found/, () => 'Esa OVA ya no existe en el registro. Vuelve al panel y actualiza la lista.'],
   [

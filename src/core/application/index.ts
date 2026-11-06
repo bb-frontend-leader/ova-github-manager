@@ -64,6 +64,22 @@ export {
   type ProjectArchiveStore,
   type ProjectSnapshot,
 } from './ProjectArchive';
+export {
+  WorkloadUseCase,
+  loadLevel,
+  HIGH_LOAD_FACTOR,
+  LOW_LOAD_FACTOR,
+  MIN_LOAD_GAP,
+  type DeveloperLoad,
+  type LoadLevel,
+  type WorkloadReport,
+} from './WorkloadUseCase';
+export {
+  ReassignOvasUseCase,
+  MAX_REASSIGN,
+  type ReassignInput,
+  type ReassignResult,
+} from './ReassignOvasUseCase';
 export { SYSTEM_ACTOR, AUDIT_ACTIONS } from './audit';
 export type {
   AuditAction,
