@@ -1,7 +1,8 @@
 import 'server-only';
 import { mkdirSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import {
+  BackupUseCase,
   ChangeOvaStatusUseCase,
   CreateOvaUseCase,
   CreateRepositoryUseCase,
@@ -13,6 +14,7 @@ import {
   Project,
   ReconcileOvasUseCase,
   SignInUseCase,
+  SqliteDatabaseBackup,
   SqliteOvaStore,
   SyncOvasUseCase,
   UpdateOvaUseCase,
@@ -21,6 +23,7 @@ import {
   type SqliteProjectStore,
 } from '@/core';
 import { getEnv } from './env';
+import { startBackupScheduler } from './backup-scheduler';
 import { cachedInspector } from './health';
 
 /** Servicios de toda la herramienta: proyectos y acceso. */
@@ -29,6 +32,9 @@ export interface Services {
   gateway: OctokitRepositoryGateway;
   signIn: SignInUseCase;
   manageProjects: ManageProjectsUseCase;
+  backups: BackupUseCase;
+  /** Carpeta donde se guardan las copias de seguridad */
+  backupDir: string;
 }
 
 /** Servicios de UN proyecto: todo lo que hacen está acotado a su organización y a sus datos. */
@@ -53,7 +59,7 @@ const globalForServices = globalThis as unknown as {
 };
 
 /** Súbelo cada vez que cambie la forma de `Services`, para invalidar la caché de desarrollo. */
-const SERVICES_VERSION = 6;
+const SERVICES_VERSION = 7;
 
 export function getServices(): Services {
   const cached = globalForServices.__ovaServices;
@@ -92,11 +98,23 @@ function buildServices(): Services {
   // Un solo token sirve para todas las organizaciones (debe tener acceso a cada una)
   const gateway = new OctokitRepositoryGateway(env.GITHUB_TOKEN);
 
+  const backupDir = env.BACKUP_DIR ? resolve(env.BACKUP_DIR) : join(dirname(databasePath), 'backups');
+  const backups = new BackupUseCase(
+    new SqliteDatabaseBackup((destination) => store.backupTo(destination), backupDir),
+    { intervalMs: env.BACKUP_INTERVAL_HOURS * 60 * 60 * 1000, keep: env.BACKUP_KEEP },
+  );
+
+  // La base solo cambia cuando alguien usa la herramienta, así que basta con empezar a vigilar
+  // cuando se arman los servicios (primera petición). Cada vez se usa el servicio vigente, no este.
+  if (backups.enabled) startBackupScheduler(() => getServices().backups.runIfDue());
+
   return {
     store,
     gateway,
     signIn: new SignInUseCase(store, { superAdmins: env.INITIAL_ADMINS }),
     manageProjects: new ManageProjectsUseCase(store, gateway),
+    backups,
+    backupDir,
   };
 }
 

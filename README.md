@@ -105,6 +105,30 @@ Cada OVA tiene un **estado**: *En desarrollo* (al crearla), *En revisión* o *En
 - **Reparar** solo *añade*: nunca quita topics ni baja el permiso de un team. Corrige por tandas de 25 para no saturar a GitHub; se repite hasta que no quede ninguna. Un repositorio que GitHub creó pero respondió con error se puede registrar ahí con su escuela y desarrollador.
 - Las bases de datos existentes se actualizan solas al arrancar (columnas `status`, `status_changed_at` y `github_login`); todas las OVAs previas quedan «En desarrollo».
 
+## Copias de seguridad
+
+Toda la información de la herramienta (proyectos, usuarios, OVAs, actividad) vive en un único archivo SQLite (`DATABASE_PATH`). La herramienta lo copia sola, con la API de respaldo de SQLite: la copia es consistente **aunque la base esté en uso**, se comprueba (integridad y esquema) antes de darla por buena y queda como un solo archivo `ova-AAAA-MM-DDTHH-MM-SSZ.db` (hora UTC).
+
+| Variable | Por defecto | Qué hace |
+|---|---|---|
+| `BACKUP_DIR` | `backups` junto a la base | Carpeta de las copias |
+| `BACKUP_INTERVAL_HOURS` | `24` | Cada cuántas horas se copia sola. `0` = sin copias automáticas |
+| `BACKUP_KEEP` | `14` | Cuántas se conservan; las más antiguas se borran |
+
+- La comprobación se hace cada 30 minutos mientras la herramienta está en marcha (empieza con la primera petición tras arrancar) y solo copia si la última tiene más de `BACKUP_INTERVAL_HOURS` horas. Al reiniciar no se duplica.
+- Un super administrador ve el estado en la pantalla de **Proyectos** («Copias de seguridad»), puede hacer una copia en el momento y ve si la última automática falló. Un fallo nunca detiene la herramienta.
+- Solo se borran archivos con el nombre de las copias; el resto de la carpeta no se toca.
+- **Una copia en el mismo disco no protege de perder el disco.** Pon `BACKUP_DIR` en otro disco o en una carpeta que ya se respalde fuera del servidor.
+- El `.env.local` (token y secretos) **no** va en las copias: guárdalo aparte.
+
+**Restaurar** (con la herramienta detenida):
+
+```bash
+node scripts/restore-backup.cjs data/backups/ova-2026-11-06T10-05-09Z.db
+```
+
+Comprueba la copia, deja la base actual junto a ella como `ova.db.antes-de-restaurar-<fecha>` y pone la copia en su lugar (`--db <ruta>` para otra base). Después vuelve a arrancar.
+
 ## Datos de cada OVA
 
 Al llegar una OVA se conocen solo tres datos:

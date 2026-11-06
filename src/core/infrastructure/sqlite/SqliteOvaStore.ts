@@ -55,6 +55,14 @@ export class SqliteOvaStore implements ProjectStore, SignInRecorder {
     this.db.close();
   }
 
+  /**
+   * Copia consistente de toda la base en `destination`, sin parar la aplicación.
+   * Usa la API de respaldo de SQLite: tiene en cuenta lo que aún no se volcó del modo WAL.
+   */
+  async backupTo(destination: string): Promise<void> {
+    await this.db.backup(destination);
+  }
+
   /** Almacén acotado a un proyecto: implementa el registro, el catálogo, los usuarios y la actividad. */
   forProject(projectId: number): SqliteProjectStore {
     return new SqliteProjectStore(this.db, projectId);

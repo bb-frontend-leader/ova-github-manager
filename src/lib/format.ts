@@ -9,6 +9,19 @@ export function currentTime(): number {
   return Date.now();
 }
 
+/** "512 B", "48,3 KB", "2,1 MB" */
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  const units = ['KB', 'MB', 'GB'];
+  let value = bytes / 1024;
+  let unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit++;
+  }
+  return `${new Intl.NumberFormat('es', { maximumFractionDigits: 1 }).format(value)} ${units[unit]}`;
+}
+
 /** "hace un momento", "hace 3 horas", "ayer", "hace 2 meses"… */
 export function relativeDate(iso: string, now: number): string {
   const diffMs = new Date(iso).getTime() - now;

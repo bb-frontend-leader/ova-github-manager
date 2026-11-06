@@ -9,16 +9,17 @@ import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { requireViewer } from '@/lib/dal';
 import { getProjectServices } from '@/lib/services';
+import { BackupsCard } from './backups-card';
 
 export const metadata = { title: 'Proyectos' };
 
 export default async function ProjectsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ denied?: string; ok?: string }>;
+  searchParams: Promise<{ denied?: string; ok?: string; backupOk?: string; backupError?: string }>;
 }) {
   const viewer = await requireViewer();
-  const { denied, ok } = await searchParams;
+  const { denied, ok, backupOk, backupError } = await searchParams;
 
   // Quien solo pertenece a un proyecto va directo a él
   if (!viewer.superAdmin && viewer.projects.length === 1 && !denied && !ok) {
@@ -98,6 +99,8 @@ export default async function ProjectsPage({
           ))}
         </ul>
       )}
+
+      {viewer.superAdmin && <BackupsCard backupOk={backupOk === '1'} backupError={backupError} />}
     </div>
   );
 }

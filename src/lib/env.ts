@@ -19,6 +19,12 @@ const EnvSchema = z.object({
         .filter(Boolean),
     ),
   DATABASE_PATH: z.string().min(1).default('./data/ova.db'),
+  /** Carpeta de las copias de seguridad. Por defecto, "backups" junto a la base de datos. */
+  BACKUP_DIR: z.string().min(1).optional(),
+  /** Cada cuántas horas se hace una copia automática. 0 = sin copias automáticas. */
+  BACKUP_INTERVAL_HOURS: z.coerce.number().min(0).default(24),
+  /** Cuántas copias se conservan; las más antiguas se borran. */
+  BACKUP_KEEP: z.coerce.number().int().min(1).default(14),
   /**
    * Solo para migrar una base de la versión de un solo proyecto: si existe, esos valores pasan a
    * ser el primer proyecto. Después los proyectos se gestionan desde la interfaz y estas variables

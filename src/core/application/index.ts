@@ -43,6 +43,14 @@ export {
   type OvaHealthConfig,
   type OvaHealthReport,
 } from './OvaHealthUseCase';
+export {
+  BackupUseCase,
+  type BackupConfig,
+  type BackupResult,
+  type BackupSnapshot,
+  type BackupStatus,
+  type DatabaseBackup,
+} from './BackupUseCase';
 export { SYSTEM_ACTOR } from './audit';
 export type {
   AuditAction,
