@@ -10,6 +10,9 @@ export function NativeSelect({ className, ...props }: ComponentProps<'select'>) 
         'focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50',
         'disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
         'dark:bg-input/30',
+        // La lista desplegable la pinta el navegador: con el fondo translúcido del select las
+        // opciones quedan ilegibles en modo oscuro, así que se les da un fondo sólido del tema.
+        '[&_option]:bg-popover [&_option]:text-popover-foreground',
         className,
       )}
       {...props}
