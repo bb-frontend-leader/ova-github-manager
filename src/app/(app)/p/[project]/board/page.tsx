@@ -23,7 +23,7 @@ import { OVA_STATUSES, STATUS_COLUMN_LABELS, STATUS_HINTS } from '@/lib/ova-stat
 export const metadata = { title: 'Tablero' };
 
 /** Máximo de tarjetas por columna: la de entregadas puede llegar a cientos. */
-const COLUMN_LIMIT = 30;
+const COLUMN_LIMIT = 10;
 
 export default async function BoardPage({
   params: routeParams,
@@ -166,8 +166,9 @@ export default async function BoardPage({
             const shown = inColumn.slice(0, COLUMN_LIMIT);
 
             return (
-              <Card key={status} aria-labelledby={`col-${status}`}>
-                <CardHeader>
+              // Alto máximo: el encabezado queda fijo y solo las tarjetas se desplazan
+              <Card key={status} aria-labelledby={`col-${status}`} className="max-h-[75vh]">
+                <CardHeader className="shrink-0">
                   <CardTitle id={`col-${status}`} className="flex items-center justify-between gap-2">
                     {STATUS_COLUMN_LABELS[status]}
                     <Badge variant="outline" aria-label={`${inColumn.length} OVAs`}>
@@ -176,7 +177,13 @@ export default async function BoardPage({
                   </CardTitle>
                   <CardDescription>{STATUS_HINTS[status]}</CardDescription>
                 </CardHeader>
-                <CardContent className="flex flex-col gap-3">
+                <CardContent
+                  // Enfocable para poder desplazarla con el teclado
+                  tabIndex={0}
+                  role="region"
+                  aria-label={`Tarjetas: ${STATUS_COLUMN_LABELS[status]}`}
+                  className="flex min-h-0 flex-col gap-3 overflow-y-auto overscroll-contain py-1 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                >
                   {shown.length === 0 && (
                     <p className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
                       {hasFilter ? 'Ninguna coincide con los filtros.' : 'Sin OVAs en este estado.'}
