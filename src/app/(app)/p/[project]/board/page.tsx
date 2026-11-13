@@ -166,9 +166,8 @@ export default async function BoardPage({
             const shown = inColumn.slice(0, COLUMN_LIMIT);
 
             return (
-              // Alto máximo: el encabezado queda fijo y solo las tarjetas se desplazan
-              <Card key={status} aria-labelledby={`col-${status}`} className="max-h-[75vh]">
-                <CardHeader className="shrink-0">
+              <Card key={status} aria-labelledby={`col-${status}`}>
+                <CardHeader>
                   <CardTitle id={`col-${status}`} className="flex items-center justify-between gap-2">
                     {STATUS_COLUMN_LABELS[status]}
                     <Badge variant="outline" aria-label={`${inColumn.length} OVAs`}>
@@ -177,13 +176,7 @@ export default async function BoardPage({
                   </CardTitle>
                   <CardDescription>{STATUS_HINTS[status]}</CardDescription>
                 </CardHeader>
-                <CardContent
-                  // Enfocable para poder desplazarla con el teclado
-                  tabIndex={0}
-                  role="region"
-                  aria-label={`Tarjetas: ${STATUS_COLUMN_LABELS[status]}`}
-                  className="flex min-h-0 flex-col gap-3 overflow-y-auto overscroll-contain py-1 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
-                >
+                <CardContent className="flex flex-col gap-3">
                   {shown.length === 0 && (
                     <p className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
                       {hasFilter ? 'Ninguna coincide con los filtros.' : 'Sin OVAs en este estado.'}
@@ -244,13 +237,6 @@ export default async function BoardPage({
             );
           })}
         </div>
-      )}
-
-      {visible.length > 0 && (
-        <p className="text-xs text-muted-foreground">
-          {visible.length} {visible.length === 1 ? 'OVA' : 'OVAs'}
-          {hasFilter ? ` de ${all.length}` : ''}
-        </p>
       )}
     </div>
   );
