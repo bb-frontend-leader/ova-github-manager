@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { themeScript } from "@/lib/theme-script";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -19,20 +20,6 @@ export const metadata: Metadata = {
   },
   description: "Crea y registra los repositorios OVA del proyecto en GitHub",
 };
-
-/**
- * Aplica el tema antes de pintar para evitar el parpadeo claro→oscuro.
- * Orden: preferencia guardada, y si no hay, la del sistema operativo.
- */
-const themeScript = `
-(() => {
-  try {
-    const saved = localStorage.getItem('theme');
-    const dark = saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
-    document.documentElement.classList.toggle('dark', dark);
-  } catch (_) {}
-})();
-`;
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
