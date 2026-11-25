@@ -9,7 +9,7 @@ import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { requireViewer } from '@/lib/dal';
 import { getProjectServices } from '@/lib/services';
-import { BackupsCard } from './backups-card';
+import { BackupsCard } from '../backups-card';
 
 export const metadata = { title: 'Proyectos' };
 
